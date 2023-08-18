@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New Template</title>
+</head>
+<body>
+
+<h2>New Template</h2>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+  
+<form action="/new_template" method="post">
+    <label for="template_name">Template Name:</label><br>
+    <input type="text" id="template_name" name="template_name"><br><br>
+
+    <label for="template_content">Template Content:</label><br>
+    <textarea id="template_content" name="template_content" rows="10" cols="30"></textarea><br><br>
+
+    <input type="submit" value="Submit">
+</form>
+
+</body>
+</html>
