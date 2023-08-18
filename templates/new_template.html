@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>New Template</title>
+    <script src="https://cdn.ckeditor.com/4.16.0/standard/ckeditor.js"></script>
 </head>
 <body>
 
@@ -23,7 +24,17 @@
     <input type="text" id="template_name" name="template_name"><br><br>
 
     <label for="template_content">Template Content:</label><br>
-    <textarea id="template_content" name="template_content" rows="10" cols="30"></textarea><br><br>
+  <textarea name="template_content" id="template_content"></textarea>
+  <script>
+      CKEDITOR.replace('template_content', {
+          toolbar: [
+              ['Bold', 'Italic', 'Underline', 'Strike'],
+              ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
+              ['Font', 'FontSize', 'TextColor', 'BGColor'],
+              ['Undo', 'Redo']
+          ]
+      });
+  </script><br><br>
 
     <input type="submit" value="Submit">
 </form>
