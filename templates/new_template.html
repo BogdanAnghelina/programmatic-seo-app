@@ -1,43 +1,86 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>New Template</title>
+{% extends "base.html" %}
+
+{% block head %}
+    <!-- CKEditor JS -->
     <script src="https://cdn.ckeditor.com/4.16.0/standard/ckeditor.js"></script>
-</head>
-<body>
+{% endblock %}
 
-<h2>New Template</h2>
+{% block content %}
+<div class="container mt-5">
+    <h2>New Template</h2>
 
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <ul class="flashes">
-      {% for message in messages %}
-        <li>{{ message }}</li>
-      {% endfor %}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="mt-4">
+                {% for message in messages %}
+                    <div class="alert alert-warning" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+      
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs mt-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="template-tab" data-toggle="tab" href="#template" role="tab">Template</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="variables-tab" data-toggle="tab" href="#variables" role="tab">Variables</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="publish-tab" data-toggle="tab" href="javascript:void(0);" role="tab">Publish</a>
+        </li>
     </ul>
-  {% endif %}
-{% endwith %}
-  
-<form action="/new_template" method="post">
-    <label for="template_name">Template Name:</label><br>
-    <input type="text" id="template_name" name="template_name"><br><br>
 
-    <label for="template_content">Template Content:</label><br>
-  <textarea name="template_content" id="template_content"></textarea>
-  <script>
-      CKEDITOR.replace('template_content', {
-          toolbar: [
-              ['Bold', 'Italic', 'Underline', 'Strike'],
-              ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
-              ['Font', 'FontSize', 'TextColor', 'BGColor'],
-              ['Undo', 'Redo']
-          ]
-      });
-  </script><br><br>
+    <!-- Tab panes -->
+    <div class="tab-content mt-4">
+        <div class="tab-pane fade show active" id="template" role="tabpanel">
+            <form action="/new_template" method="post">
+                <div class="form-group">
+                    <label for="template_name">Template Name:</label>
+                    <input type="text" id="template_name" name="template_name" class="form-control">
+                </div>
 
-    <input type="submit" value="Submit">
-</form>
+                <div class="form-group">
+                    <label for="template_content">Template Content:</label>
+                    <textarea name="template_content" id="template_content" class="form-control"></textarea>
+                    <script>
+                        CKEDITOR.replace('template_content', {
+                            toolbar: [
+                                ['Bold', 'Italic', 'Underline', 'Strike'],
+                                ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
+                                ['Font', 'FontSize', 'TextColor', 'BGColor'],
+                                ['Undo', 'Redo']
+                            ]
+                        });
+                    </script>
+                </div>
 
-</body>
-</html>
+                <input type="submit" name="save_template" value="Submit" class="btn btn-primary">
+            </form>
+        </div>
+
+        <div class="tab-pane fade" id="variables" role="tabpanel">
+            <h4>Existing Variables:</h4>
+            <ul>
+                {% for variable in variables %}
+                    <li>{{ variable }}</li>
+                {% endfor %}
+            </ul>
+            <h4 class="mt-4">Add New Variable:</h4>
+            <form action="/new_template" method="post">
+                <div class="form-group">
+                    <input type="text" name="variable_name" class="form-control" placeholder="Enter variable e.g. [name]">
+                </div>
+                <input type="submit" name="add_variable" value="Add Variable" class="btn btn-secondary">
+            </form>
+        </div>
+
+        <div class="tab-pane fade" id="publish" role="tabpanel">
+            <!-- Content for Publish tab. As per requirement, you can fill this later. -->
+        </div>
+    </div>
+</div>
+{% endblock %}
