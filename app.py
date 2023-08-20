@@ -1,6 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_login import current_user, LoginManager, UserMixin, login_user, login_required, logout_user
 from database import Template, session
+import re
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
@@ -12,6 +13,14 @@ login_manager.login_view = 'login'
 class User(UserMixin):
     def __init__(self, user_id):
         self.id = user_id
+
+def format_variable(variable):
+    # Check if the variable contains only valid characters
+    if not re.match(r'^[a-zA-Z0-9_]*$', variable):
+        return None
+    
+    # Convert to lowercase and wrap with square brackets
+    return f"[{variable.lower()}]"
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -43,28 +52,40 @@ def new_template():
         if 'save_template' in request.form:
             template_name = request.form['template_name']
             template_content = request.form['template_content']
-
             template.template_name = template_name or "Draft #1"
             template.template_content = template_content or ''
             session.commit()
-
             flash('Template saved successfully!')
             return redirect(url_for('new_template'))
 
         elif 'add_variable' in request.form:
             variable_name = request.form['variable_name']
-            if variable_name:
-                # Add the variable to the template's variables list
-                current_variables = template.template_variables.split(",") if template.template_variables else []
-                current_variables.append(variable_name)
-                template.template_variables = ",".join(current_variables)
-                session.commit()
-                flash('Variable added successfully!')
+            formatted_variable = format_variable(variable_name)
+
+            if not formatted_variable:
+                flash('Variable can only contain letters, numbers, and underscores.')
                 return redirect(url_for('new_template'))
 
-    variables = template.template_variables.split(",") if template.template_variables else []
+            current_variables = template.template_variables.split(",") if template.template_variables else []
+            current_variables.append(formatted_variable)
+            template.template_variables = ",".join(current_variables)
+            session.commit()
+            flash(f'Variable {formatted_variable} added successfully!')
+            return redirect(url_for('new_template'))
 
+        elif 'delete_variable' in request.form:
+            variable_to_delete = request.form['delete_variable']
+            current_variables = template.template_variables.split(",") if template.template_variables else []
+            if variable_to_delete in current_variables:
+                current_variables.remove(variable_to_delete)
+                template.template_variables = ",".join(current_variables)
+                session.commit()
+                flash(f'Variable {variable_to_delete} deleted successfully!')
+            return redirect(url_for('new_template'))
+
+    variables = template.template_variables.split(",") if template.template_variables else []
     return render_template('new_template.html', variables=variables)
+
 
 @app.route('/logout')
 @login_required
