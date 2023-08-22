@@ -113,6 +113,11 @@
             localStorage.setItem('activeTab', $(e.target).attr('href'));
         });
 
+        // Set the Variables tab as active after submitting the "Add New Variable" form
+        $("form[name='add_variable_form']").on('submit', function(e) {
+            localStorage.setItem('activeTab', '#variables');
+        });
+
         // CKEditor Initialization
         CKEDITOR.replace('template_content', {
             removePlugins: 'exportpdf',
@@ -151,41 +156,6 @@
                 });
             }
         });
-
-        $("form[name='add_variable_form']").on('submit', function(e) {
-            e.preventDefault();
-
-            $.post('/new_template', $(this).serialize(), function(response) {
-                if (response.status == 'success') {
-                    // Add the variable to the UI
-                    let variableButton = `
-                        <span class="variable-button btn btn-light">${response.variable} 
-                            <form style="display: inline;" action="/new_template" method="post">
-                                <button type="submit" name="delete_variable" value="${response.variable}" class="btn text-danger btn-sm">X</button>
-                            </form>
-                        </span>`;
-                    $("#variables .variable-button:last").after(variableButton);
-                    $("input[name='variable_name']").val(''); // Clear the input
-                    flashMessage(response.message, 'success');
-                } else {
-                    flashMessage(response.message, 'error');
-                }
-            });
-        });
     });
-
-    function flashMessage(message, type) {
-        var alertType = type === 'success' ? 'alert-success' : 'alert-danger';
-        var alertMsg = `<div class="alert ${alertType} alert-dismissible fade show mt-2" role="alert">
-                            ${message}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>`;
-        $('body').prepend(alertMsg);
-        setTimeout(function() {
-            $('.alert').alert('close');
-        }, 3000);
-    }
 </script>
 {% endblock %}
