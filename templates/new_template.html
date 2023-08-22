@@ -15,80 +15,85 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2>New Template</h2>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <h2>New Template</h2>
 
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
             <div class="mt-4">
                 {% for message in messages %}
-                    <div class="alert alert-warning" role="alert">
-                        {{ message }}
-                    </div>
+                <div class="alert alert-warning" role="alert">
+                    {{ message }}
+                </div>
                 {% endfor %}
             </div>
-        {% endif %}
-    {% endwith %}
-      
-    <!-- Nav tabs -->
-    <ul class="nav nav-tabs mt-4" role="tablist">
-        <li class="nav-item">
-            <a class="nav-link active" id="template-tab" data-toggle="tab" href="#template" role="tab">Template</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" id="variables-tab" data-toggle="tab" href="#variables" role="tab">Variables</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" id="publish-tab" data-toggle="tab" href="javascript:void(0);" role="tab">Publish</a>
-        </li>
-    </ul>
+            {% endif %}
+            {% endwith %}
 
-    <!-- Tab panes -->
-    <div class="tab-content mt-4">
-        <div class="tab-pane fade show active" id="template" role="tabpanel">
-            <form action="/new_template" method="post">
-                <div class="form-group">
-                    <label for="template_name">Template Name:</label>
-                    <input type="text" id="template_name" name="template_name" class="form-control" value="{{ template_name }}">
-                </div>
+            <!-- Nav tabs -->
+            <ul class="nav nav-tabs mt-4" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="template-tab" data-toggle="tab" href="#template" role="tab">Template</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="variables-tab" data-toggle="tab" href="#variables" role="tab">Variables</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="publish-tab" data-toggle="tab" href="javascript:void(0);" role="tab">Publish</a>
+                </li>
+            </ul>
 
-                <div class="form-group">
-                    <label for="template_content">Template Content:</label>
-                    <textarea name="template_content" id="template_content" class="form-control">{{ saved_content|default('') }}</textarea>
-                </div>
+            <!-- Tab panes -->
+            <div class="tab-content mt-4">
+                <div class="tab-pane fade show active" id="template" role="tabpanel">
+                    <form action="/new_template" method="post">
+                        <div class="form-group">
+                            <label for="template_name">Template Name:</label>
+                            <input type="text" id="template_name" name="template_name" class="form-control" value="{{ template_name }}">
+                        </div><br>
 
-                <input type="submit" name="save_template" value="Save template" class="btn btn-primary">
-            </form>
-        </div>
+                        <div class="form-group">
+                            <label for="template_content">Template Content:</label>
+                            <textarea name="template_content" id="template_content" class="form-control">{{ saved_content|default('') }}</textarea>
+                        </div><br>
 
-        <div class="tab-pane fade" id="variables" role="tabpanel">
-            <h4>Existing Variables:</h4>
-            <div>
-              {% for variable in variables %}
-                <span class="variable-button btn btn-light">{{ variable }} 
-                    <form style="display: inline;" action="/new_template" method="post">
-                    <button type="submit" name="delete_variable" value="{{ variable }}" class="btn text-danger btn-sm">X</button>
+                        <input type="submit" name="save_template" value="Save template" class="btn btn-primary">
                     </form>
-                </span>
-              {% endfor %}
-            </div>
-            <h4 class="mt-4">Add New Variable:</h4>
-            <form action="/new_template" method="post" name="add_variable_form">  <!-- Added name attribute here -->
-                <div class="form-group">
-                    <input type="text" name="variable_name" class="form-control" placeholder="Enter variable e.g. [name]">
                 </div>
-                <input type="submit" name="add_variable" value="Add Variable" class="btn btn-secondary">
-            </form>
-        </div>
 
-        <div class="tab-pane fade" id="publish" role="tabpanel">
-            <!-- Content for Publish tab -->
+                <div class="tab-pane fade" id="variables" role="tabpanel">
+                    <h4>Existing Variables:</h4>
+                    <div>
+                    {% for variable in variables %}
+                        <span class="variable-button btn btn-light">{{ variable }} 
+                            <form style="display: inline;" action="/new_template" method="post">
+                            <button type="submit" name="delete_variable" value="{{ variable }}" class="btn text-danger btn-sm">X</button>
+                            </form>
+                        </span>
+                    {% endfor %}
+                    </div><br>
+                    <h4 class="mt-4">Add New Variable:</h4>
+                    <form action="/new_template" method="post" name="add_variable_form">
+                        <div class="form-group">
+                            <input type="text" name="variable_name" class="form-control" placeholder="Enter variable e.g. [name]" style="max-width:400px;">
+                        </div><br><br>
+                        <input type="submit" name="add_variable" value="Add Variable" class="btn btn-secondary">
+                    </form>
+                </div>
+
+                <div class="tab-pane fade" id="publish" role="tabpanel">
+                    <!-- Content for Publish tab -->
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-    <script src="https://cdn.ckeditor.com/4.16.0/full/ckeditor.js"></script>
+<script src="https://cdn.ckeditor.com/4.16.0/full/ckeditor.js"></script>
 {% endblock %}
+
 
 {% block scripts %}
 <script>
@@ -109,7 +114,7 @@
             removePlugins: 'exportpdf',
             extraPlugins: 'insertVariable',
             toolbar: [
-                ['InsertVariable'],  // Button at the start
+                ['InsertVariable'],
                 ['Bold', 'Italic', 'Underline', 'Strike'],
                 ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
                 ['Font', 'FontSize', 'TextColor', 'BGColor'],
@@ -143,8 +148,10 @@
             }
         });
 
+        $("form[name='add_variable_form']").on('submit', function(e) {
+            e.preventDefault();
+
             $.post('/new_template', $(this).serialize(), function(response) {
-              console.log(response);
                 if (response.status == 'success') {
                     // Add the variable to the UI
                     let variableButton = `
@@ -161,5 +168,20 @@
                 }
             });
         });
+    });
+
+    function flashMessage(message, type) {
+        var alertType = type === 'success' ? 'alert-success' : 'alert-danger';
+        var alertMsg = `<div class="alert ${alertType} alert-dismissible fade show mt-2" role="alert">
+                            ${message}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>`;
+        $('body').prepend(alertMsg);
+        setTimeout(function() {
+            $('.alert').alert('close');
+        }, 3000);
+    }
 </script>
 {% endblock %}

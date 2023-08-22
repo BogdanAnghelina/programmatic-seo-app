@@ -6,21 +6,33 @@
     <title>Your App Title</title>
 
     <!-- Bootstrap CSS -->
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://getbootstrap.com/docs/5.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+    <!-- Font Awesome CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+
     {% block head %}{% endblock %}
 </head>
-<body>
+<body class="d-flex h-100">
 
-    {% block content %}{% endblock %}
+<div class="container-fluid d-flex h-100 p-0 m-0">
+    <div class="row flex-grow-1 w-100 m-0">
+        <!-- Sidebar Inclusion -->
+        {% include 'sidebar.html' %}
 
-    <!-- Popper.js, and Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+        <!-- Main Content -->
+        <main role="main" class="col p-5">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
 
-    {% block scripts %}{% endblock %}
+<!-- Popper.js, and Bootstrap JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+{% block scripts %}{% endblock %}
 
 </body>
 </html>
