@@ -19,10 +19,10 @@
 <div class="container-fluid d-flex h-100 p-0 m-0">
     <div class="row flex-grow-1 w-100 m-0">
         <!-- Sidebar Inclusion -->
-        {% include 'sidebar.html' %}
+        {% block sidebar %}{% endblock %}
 
         <!-- Main Content -->
-        <main role="main" class="col p-5">
+        <main role="main" class="col p-4">
             {% block content %}{% endblock %}
         </main>
     </div>
