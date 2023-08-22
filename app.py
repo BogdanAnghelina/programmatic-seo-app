@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import current_user, LoginManager, UserMixin, login_user, login_required, logout_user
 from database import Template, session
 import re
@@ -17,7 +17,7 @@ class User(UserMixin):
 def format_variable(variable):
     # Check if the variable contains only valid characters
     if not re.match(r'^[a-zA-Z0-9_]*$', variable):
-        return None
+        return ''
     
     # Convert to lowercase and wrap with square brackets
     return f"[{variable.lower()}]"
@@ -40,20 +40,24 @@ def login():
 @app.route('/new_template', methods=['GET', 'POST'])
 @login_required
 def new_template():
-    template = session.query(Template).filter_by(draft=True, user_id=current_user.id).first()
-
-    if not template:
-        draft_name = "Draft #1"
-        template = Template(template_name=draft_name, template_content='', draft=True, user_id=current_user.id)
-        session.add(template)
-        session.commit()
+    # Check if there's an existing draft for the user
+    draft = session.query(Template).filter_by(draft=True, user_id=current_user.id).first()
 
     if request.method == 'POST':
         if 'save_template' in request.form:
             template_name = request.form['template_name']
             template_content = request.form['template_content']
-            template.template_name = template_name or "Draft #1"
-            template.template_content = template_content or ''
+
+            # If they're saving, save the new template and remove the draft
+            new_template = Template(template_name=template_name or "Unnamed Template", 
+                                    template_content=template_content or '', 
+                                    draft=False, 
+                                    user_id=current_user.id)
+            session.add(new_template)
+
+            if draft:
+                session.delete(draft)
+                
             session.commit()
             flash('Template saved successfully!')
             return redirect(url_for('new_template'))
@@ -66,26 +70,41 @@ def new_template():
                 flash('Variable can only contain letters, numbers, and underscores.')
                 return redirect(url_for('new_template'))
 
-            current_variables = template.template_variables.split(",") if template.template_variables else []
+            if not draft:
+                draft = Template(template_name="Draft", template_content='', draft=True, user_id=current_user.id)
+                session.add(draft)
+                session.commit()
+
+            current_variables = draft.template_variables.split(",") if draft.template_variables else []
             current_variables.append(formatted_variable)
-            template.template_variables = ",".join(current_variables)
+            draft.template_variables = ",".join(current_variables)
             session.commit()
             flash(f'Variable {formatted_variable} added successfully!')
             return redirect(url_for('new_template'))
 
         elif 'delete_variable' in request.form:
             variable_to_delete = request.form['delete_variable']
-            current_variables = template.template_variables.split(",") if template.template_variables else []
-            if variable_to_delete in current_variables:
-                current_variables.remove(variable_to_delete)
-                template.template_variables = ",".join(current_variables)
-                session.commit()
-                flash(f'Variable {variable_to_delete} deleted successfully!')
+
+            if draft:
+                current_variables = draft.template_variables.split(",") if draft.template_variables else []
+                if variable_to_delete in current_variables:
+                    current_variables.remove(variable_to_delete)
+                    draft.template_variables = ",".join(current_variables)
+                    session.commit()
+                    flash(f'Variable {variable_to_delete} deleted successfully!')
+
             return redirect(url_for('new_template'))
 
-    variables = template.template_variables.split(",") if template.template_variables else []
-    return render_template('new_template.html', variables=variables)
+    template_name = ""
+    template_content = ""
+    variables = []
 
+    if draft:
+        template_name = draft.template_name
+        template_content = draft.template_content
+        variables = draft.template_variables.split(",") if draft.template_variables else []
+
+    return render_template('new_template.html', template_name=template_name, template_content=template_content, variables=variables)
 
 @app.route('/logout')
 @login_required

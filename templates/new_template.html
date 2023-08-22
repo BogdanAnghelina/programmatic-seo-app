@@ -49,15 +49,15 @@
             <form action="/new_template" method="post">
                 <div class="form-group">
                     <label for="template_name">Template Name:</label>
-                    <input type="text" id="template_name" name="template_name" class="form-control">
+                    <input type="text" id="template_name" name="template_name" class="form-control" value="{{ template_name }}">
                 </div>
 
                 <div class="form-group">
                     <label for="template_content">Template Content:</label>
-                    <textarea name="template_content" id="template_content" class="form-control"></textarea>
+                    <textarea name="template_content" id="template_content" class="form-control">{{ saved_content|default('') }}</textarea>
                 </div>
 
-                <input type="submit" name="save_template" value="Submit" class="btn btn-primary">
+                <input type="submit" name="save_template" value="Save template" class="btn btn-primary">
             </form>
         </div>
 
@@ -73,7 +73,7 @@
               {% endfor %}
             </div>
             <h4 class="mt-4">Add New Variable:</h4>
-            <form action="/new_template" method="post">
+            <form action="/new_template" method="post" name="add_variable_form">  <!-- Added name attribute here -->
                 <div class="form-group">
                     <input type="text" name="variable_name" class="form-control" placeholder="Enter variable e.g. [name]">
                 </div>
@@ -87,7 +87,6 @@
     </div>
 </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.ckeditor.com/4.16.0/full/ckeditor.js"></script>
 {% endblock %}
 
@@ -107,6 +106,7 @@
 
         // CKEditor Initialization
         CKEDITOR.replace('template_content', {
+            removePlugins: 'exportpdf',
             extraPlugins: 'insertVariable',
             toolbar: [
                 ['InsertVariable'],  // Button at the start
@@ -142,6 +142,39 @@
                 });
             }
         });
+
+        // Add Variable using AJAX
+        $("form[action='/new_template'][name='add_variable_form']").submit(function(e) {
+            e.preventDefault();
+
+            $.post('/new_template', $(this).serialize(), function(response) {
+              console.log(response);
+                if (response.status == 'success') {
+                    // Add the variable to the UI
+                    let variableButton = `
+                        <span class="variable-button btn btn-light">${response.variable} 
+                            <form style="display: inline;" action="/new_template" method="post">
+                                <button type="submit" name="delete_variable" value="${response.variable}" class="btn text-danger btn-sm">X</button>
+                            </form>
+                        </span>`;
+                    $("#variables .variable-button:last").after(variableButton);
+                    $("input[name='variable_name']").val(''); // Clear the input
+                    flashMessage(response.message, 'success');
+                } else {
+                    flashMessage(response.message, 'error');
+                }
+            });
+        });
+
+        // Simple flash message function
+        function flashMessage(message, type) {
+            let alertType = (type == 'success') ? 'alert-success' : 'alert-warning';
+            let alertHTML = `<div class="alert ${alertType}" role="alert">${message}</div>`;
+            $(".container").prepend(alertHTML);
+            setTimeout(function() {
+                $(".alert").first().remove();
+            }, 3000);
+        }
     });
 </script>
 {% endblock %}
