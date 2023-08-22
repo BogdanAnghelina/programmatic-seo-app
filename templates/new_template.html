@@ -143,10 +143,6 @@
             }
         });
 
-        // Add Variable using AJAX
-        $("form[action='/new_template'][name='add_variable_form']").submit(function(e) {
-            e.preventDefault();
-
             $.post('/new_template', $(this).serialize(), function(response) {
               console.log(response);
                 if (response.status == 'success') {
@@ -165,16 +161,5 @@
                 }
             });
         });
-
-        // Simple flash message function
-        function flashMessage(message, type) {
-            let alertType = (type == 'success') ? 'alert-success' : 'alert-warning';
-            let alertHTML = `<div class="alert ${alertType}" role="alert">${message}</div>`;
-            $(".container").prepend(alertHTML);
-            setTimeout(function() {
-                $(".alert").first().remove();
-            }, 3000);
-        }
-    });
 </script>
 {% endblock %}

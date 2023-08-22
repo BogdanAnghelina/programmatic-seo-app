@@ -37,6 +37,10 @@ def login():
             flash('Invalid credentials.')
     return render_template('login.html')
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 @app.route('/new_template', methods=['GET', 'POST'])
 @login_required
 def new_template():
