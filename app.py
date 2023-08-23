@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import current_user, LoginManager, UserMixin, login_user, login_required, logout_user
+from sqlalchemy.orm.exc import NoResultFound
 from database import Template, session
 import re
 
@@ -21,6 +22,13 @@ def format_variable(variable):
     
     # Convert to lowercase and wrap with square brackets
     return f"[{variable.lower()}]"
+
+def strip_tags(input_string):
+    if not input_string or not isinstance(input_string, str):
+        return ''
+    return re.sub(r'<[^>]*>', '', input_string)
+
+app.jinja_env.filters['strip_tags'] = strip_tags
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -109,6 +117,61 @@ def new_template():
         variables = draft.template_variables.split(",") if draft.template_variables else []
 
     return render_template('new_template.html', template_name=template_name, template_content=template_content, variables=variables)
+
+@app.route('/edit_template', methods=['GET', 'POST'])
+@login_required
+def edit_template():
+    templates = session.query(Template).filter_by(draft=False, user_id=current_user.id).all()
+
+    # Debugging print statement
+    for t in templates:
+        print(t.template_content)
+  
+    if request.method == 'POST':
+        if 'update_template' in request.form:
+            template_id = request.form.get('template_id', None)
+            try:
+                template = session.query(Template).filter_by(id=template_id, user_id=current_user.id).one()
+                template.template_name = request.form['template_name']
+                template.template_content = request.form['template_content']
+                session.commit()
+                flash('Template updated successfully!')
+                return redirect(url_for('edit_template'))
+            except NoResultFound:
+                flash('Template not found.')
+                return redirect(url_for('edit_template'))
+
+        elif 'add_variable' in request.form:
+            variable_name = request.form['variable_name']
+            formatted_variable = format_variable(variable_name)
+
+            if not formatted_variable:
+                flash('Variable can only contain letters, numbers, and underscores.')
+                return redirect(url_for('edit_template'))
+
+            # Just as an example, let's add the variable to the first template (you might want to change this logic)
+            if templates:
+                template = templates[0]
+                current_variables = template.template_variables.split(",") if template.template_variables else []
+                current_variables.append(formatted_variable)
+                template.template_variables = ",".join(current_variables)
+                session.commit()
+                flash(f'Variable {formatted_variable} added successfully!')
+
+        elif 'delete_variable' in request.form:
+            variable_to_delete = request.form['delete_variable']
+
+            # Again, as an example, we'll delete the variable from the first template
+            if templates:
+                template = templates[0]
+                current_variables = template.template_variables.split(",") if template.template_variables else []
+                if variable_to_delete in current_variables:
+                    current_variables.remove(variable_to_delete)
+                    template.template_variables = ",".join(current_variables)
+                    session.commit()
+                    flash(f'Variable {variable_to_delete} deleted successfully!')
+
+    return render_template('edit_template.html', templates=templates)
 
 @app.route('/logout')
 @login_required
