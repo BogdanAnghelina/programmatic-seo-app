@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block sidebar %}
+    {% include 'sidebar.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <h2>Extract Variables</h2>
+            <form action="/extract_variables" method="post">
+                <div class="form-group">
+                    <label for="template_id">Template ID:</label>
+                    <input type="text" id="template_id" name="template_id" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Extract Variables</button>
+            </form>
+            {% if variables %}
+            <h4 class="mt-4">Extracted Variables:</h4>
+            <ul>
+                {% for variable in variables %}
+                <li>{{ variable }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

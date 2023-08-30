@@ -28,3 +28,4 @@ class Template(Base):
     template_variables = Column(Text, nullable=True)
     draft = Column(Boolean, default=True)
     user_id = Column(String(50), nullable=False)
+    active_tab = Column(String(50), nullable=True)

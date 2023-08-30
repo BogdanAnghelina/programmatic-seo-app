@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block sidebar %}
+    {% include 'sidebar.html' %}
+{% endblock %}
+
+{% block head %}
+    <style>
+        .template-card {
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <h2>Your templates</h2>
+
+            <!-- If no templates exist, show message -->
+            {% if templates|length == 0 %}
+                <p class="text-center">You have no templates yet.</p>
+            {% else %}
+                <!-- Template cards view -->
+                <div id="template-cards" class="row mt-4">
+                    {% for template in templates %}
+                    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div class="card template-card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ template.template_name }}</h5>
+                                <p class="card-text">{{ template.template_content|strip_tags|truncate(100, True) }}</p>
+                            </div>
+                            <div class="card-footer">
+                                <a href="{{ url_for('edit_template', template_id=template.id) }}">Edit</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

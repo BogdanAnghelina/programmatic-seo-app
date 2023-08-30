@@ -15,11 +15,6 @@
             background-color: green !important;
             color: #fff !important;
         }
-
-        .template-card {
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
     </style>
 {% endblock %}
 
@@ -27,85 +22,73 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col">
-            <h2>Your templates</h2>
+            <h2>Edit Template: {{ template_name }}</h2>
 
-            <!-- Template cards view -->
-            <div id="template-cards" class="row mt-4">
-                {% for template in templates %}
-                <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-                    <div class="card template-card" data-template-id="{{ template.id }}">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ template.template_name }}</h5>
-                            <p class="card-text">{{ template.template_content|strip_tags|truncate(100, True) }}</p>
-
-
-                        </div>
-                        <div class="card-footer">
-                            <button class="btn btn-primary btn-sm text-center">Edit</button>
-                        </div>
-                    </div>
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="mt-4">
+                {% for message in messages %}
+                <div class="alert alert-warning" role="alert">
+                    {{ message }}
                 </div>
                 {% endfor %}
             </div>
+            {% endif %}
+            {% endwith %}
 
+            <!-- Nav tabs -->
+            <ul class="nav nav-tabs mt-4" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="template-tab" data-toggle="tab" href="#template" role="tab">Template</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="variables-tab" data-toggle="tab" href="#variables" role="tab">Variables</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="publish-tab" data-toggle="tab" href="javascript:void(0);" role="tab">Publish</a>
+                </li>
+            </ul>
 
-            <!-- Detailed editing view (initially hidden) -->
-            <div id="template-details" class="mt-4" style="display: none;">
-                <!-- Tab links -->
-                <ul class="nav nav-tabs mt-4" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="template-tab" data-toggle="tab" href="#template" role="tab">Template</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="variables-tab" data-toggle="tab" href="#variables" role="tab">Variables</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="publish-tab" data-toggle="tab" href="#publish" role="tab">Publish</a>
-                    </li>
-                </ul>
+            <!-- Tab panes -->
+            <div class="tab-content mt-4">
+                <div class="tab-pane fade show active" id="template" role="tabpanel">
+                    <form action="/new_template" method="post">
+                        <div class="form-group">
+                            <label for="template_name">Template Name:</label>
+                            <input type="text" id="template_name" name="template_name" class="form-control" value="{{ template_name }}">
+                        </div><br>
 
-                <!-- Tab content -->
-                <div class="tab-content mt-4">
-                    <div class="tab-pane fade show active" id="template" role="tabpanel">
-                        <form action="/edit_template" method="post">
-                            <div class="form-group">
-                                <label for="template_name">Template Name:</label>
-                                <input type="text" id="template_name" name="template_name" class="form-control" value="{{ template_name }}">
-                            </div>
+                        <div class="form-group">
+                            <label for="template_content">Template Content:</label>
+                            <textarea name="template_content" id="template_content" class="form-control">{{ saved_content|default('') }}</textarea>
+                        </div><br>
 
-                            <div class="form-group">
-                                <label for="template_content">Template Content:</label>
-                                <textarea name="template_content" id="template_content" class="form-control">{{ saved_content|default('') }}</textarea>
-                            </div>
+                        <input type="submit" name="save_template" value="Save template" class="btn btn-primary">
+                    </form>
+                </div>
 
-                            <input type="submit" name="update_template" value="Update template" class="btn btn-primary">
-                        </form>
-                    </div>
+                <div class="tab-pane fade" id="variables" role="tabpanel">
+                    <h4>Existing Variables:</h4>
+                    <div>
+                    {% for variable in variables %}
+                        <span class="variable-button btn btn-light">{{ variable }} 
+                            <form style="display: inline;" action="/new_template" method="post">
+                            <button type="submit" name="delete_variable" value="{{ variable }}" class="btn text-danger btn-sm">X</button>
+                            </form>
+                        </span>
+                    {% endfor %}
+                    </div><br>
+                    <h4 class="mt-4">Add New Variable:</h4>
+                    <form id="add_variable_form">
+                        <div class="form-group">
+                            <input type="text" name="variable_name" class="form-control" placeholder="Enter variable e.g. [name]" style="max-width:400px;">
+                        </div><br><br>
+                        <input type="button" id="add_variable_btn" value="Add Variable" class="btn btn-secondary">
+                    </form>
+                </div>
 
-                    <div class="tab-pane fade" id="variables" role="tabpanel">
-                        <h4>Existing Variables:</h4>
-                        <div>
-                            {% for variable in variables %}
-                                <span class="variable-button btn btn-light">{{ variable }} 
-                                    <form style="display: inline;" action="/edit_template" method="post">
-                                        <button type="submit" name="delete_variable" value="{{ variable }}" class="btn text-danger btn-sm">X</button>
-                                    </form>
-                                </span>
-                            {% endfor %}
-                        </div>
-
-                        <h4 class="mt-4">Add New Variable:</h4>
-                        <form action="/edit_template" method="post" name="add_variable_form">
-                            <div class="form-group">
-                                <input type="text" name="variable_name" class="form-control" placeholder="Enter variable e.g. [name]">
-                            </div>
-                            <input type="submit" name="add_variable" value="Add Variable" class="btn btn-secondary">
-                        </form>
-                    </div>
-
-                    <div class="tab-pane fade" id="publish" role="tabpanel">
-                        <!-- Content for Publish tab -->
-                    </div>
+                <div class="tab-pane fade" id="publish" role="tabpanel">
+                    <!-- Content for Publish tab -->
                 </div>
             </div>
         </div>
@@ -118,15 +101,6 @@
 {% block scripts %}
 <script>
     $(document).ready(function(){
-        // Show the chosen template's details when its card is clicked
-        $('.template-card').click(function() {
-            let templateId = $(this).data('template-id');
-            $('#template-cards').hide();
-            $('#template-details').show();
-
-            // TODO: Fetch the template details using templateId from your backend, populate the form, and then continue the editing process
-        });
-
         // Check for the saved tab in local storage and activate it
         let activeTab = localStorage.getItem('activeTab');
         if(activeTab){
@@ -137,36 +111,89 @@
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
             localStorage.setItem('activeTab', $(e.target).attr('href'));
         });
+
+        // Set the Variables tab as active after submitting the "Add New Variable" form
+        $("form[name='add_variable_form']").on('submit', function(e) {
+            localStorage.setItem('activeTab', '#variables');
+        });
+
+        // CKEditor Initialization
+        CKEDITOR.replace('template_content', {
+            removePlugins: 'exportpdf',
+            extraPlugins: 'insertVariable',
+            toolbar: [
+                ['InsertVariable'],
+                ['Bold', 'Italic', 'Underline', 'Strike'],
+                ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
+                ['Font', 'FontSize', 'TextColor', 'BGColor'],
+                ['Undo', 'Redo']
+            ]
+        });
+
+        // Custom CKEditor Plugin for inserting variables
+        CKEDITOR.plugins.add('insertVariable', {
+            init: function(editor) {
+                editor.ui.addRichCombo('InsertVariable', {
+                    className: 'cke_button__insertvariable_label',
+                    label: '+ Variable',
+                    title: '+ Add variable',
+                    toolbar: 'insert',
+                    panel: {
+                        css: [ CKEDITOR.skin.getPath('editor') ].concat(editor.config.contentsCss),
+                        multiSelect: false,
+                        attributes: { 'aria-label': 'Variables' }
+                    },
+                    init: function() {
+                        var variables = {{ variables|tojson }};
+                        for(var i = 0; i < variables.length; i++) {
+                            this.add(variables[i], variables[i], variables[i]);
+                        }
+                    },
+                    onClick: function(value) {
+                        editor.insertText(value);
+                    }
+                });
+            }
+        });
     });
 
-    // CKEditor with custom button for inserting variables
-    CKEDITOR.replace('template_content', {
-        extraPlugins: 'insertvariable',
-        toolbar: [
-            { name: 'basicstyles', items: [ 'Bold', 'Italic', 'Underline', 'Strike' ] },
-            { name: 'paragraph', items: [ 'NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock' ] },
-            { name: 'insert', items: [ 'InsertVariable' ] },
-            { name: 'tools', items: [ 'Maximize' ] }
-        ]
-    });
 
-    // CKEditor custom plugin for inserting variables
-    CKEDITOR.plugins.add('insertvariable', {
-        init: function(editor) {
-            editor.addCommand('insertVariable', {
-                exec: function(editor) {
-                    // TODO: Here you might want to integrate the logic to select and insert a variable
-                    editor.insertText('[your_variable]');
+    document.addEventListener("DOMContentLoaded", function() {
+        // Get the button that triggers the variable addition
+        const addButton = document.getElementById('add_variable_btn');
+    
+        // Add a click event listener to the button
+        addButton.addEventListener('click', function() {
+            // Get the variable name from the form
+            const variableName = document.querySelector('input[name="variable_name"]').value;
+    
+            // Perform the AJAX request
+            fetch('/add_variable', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `variable_name=${variableName}`,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(`Variable added successfully: ${data.variable}`);
+                    // TODO: update the UI to reflect the new variable, if needed
+                } else {
+                    alert(`Error: ${data.message}`);
                 }
+            })
+            .catch((error) => {
+                console.error('There was a problem with the fetch operation:', error);
             });
-
-            editor.ui.addButton('InsertVariable', {
-                label: 'Insert Variable',
-                command: 'insertVariable',
-                toolbar: 'insert',
-                icon: '/path_to_icon/icon.png'
-            });
-        }
+        });
     });
+
+  
+  
+  function setDefaultTab() {
+    localStorage.setItem('activeTab', '#template');
+  }
 </script>
 {% endblock %}
