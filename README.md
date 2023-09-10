@@ -1,2 +1,2 @@
-# programmatic-seo-app
-An app for programmatic SEO.
+# psapp
+An app made by me.
