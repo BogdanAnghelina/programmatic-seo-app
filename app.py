@@ -132,7 +132,7 @@ def saved_templates():
 
 
 
-@app.route('/edit_template/<int:template_id>', methods=['GET'])
+@app.route('/edit_template/<int:template_id>', methods=['GET', 'POST'])
 @login_required
 def edit_template(template_id):
     template_data = session.query(Template).filter_by(id=template_id, user_id=current_user.id).first()
@@ -140,10 +140,25 @@ def edit_template(template_id):
         flash("Template not found.")
         return redirect(url_for('saved_templates'))
 
+    if request.method == 'POST':
+        if 'add_variable' in request.form:
+            variable_name = request.form['variable_name']
+            formatted_variable = format_variable(variable_name)
+
+            if not formatted_variable:
+                flash('Variable can only contain letters, numbers, and underscores.')
+            else:
+                current_variables = template_data.template_variables.split(",") if template_data.template_variables else []
+                current_variables.append(formatted_variable)
+                template_data.template_variables = ",".join(current_variables)
+                session.commit()
+                flash(f'Variable {formatted_variable} added successfully!')
+
     variables = template_data.template_variables.split(",") if template_data.template_variables else []
     return render_template('edit_template.html', template=template_data, variables=variables,
                            template_name=template_data.template_name, template_id=template_id,
-                           template_content=template_data.template_content)  # Added this line
+                           template_content=template_data.template_content)
+
 
 
 
@@ -214,17 +229,23 @@ def get_variables():
 
 
 
-
-
-
-
-
-
 @app.route('/add_variable', methods=['POST'])
 def add_variable():
     variable_name = request.form.get('variable_name')
     template_id = request.form.get('template_id')
-    print(f"Debug: Received template_id: {template_id}")  # Debug line
+    
+    # Debug line added here
+    print(f"Debug: Received variable_name: {variable_name}, template_id: {template_id}")
+
+    # Add this check
+    if variable_name is None or template_id is None:
+        return jsonify(status='error', message='Variable name and template ID are required.'), 400
+
+
+    # Add this check
+    if variable_name is None:
+        return jsonify(status='error', message='Variable name is required.'), 400
+
     formatted_variable = format_variable(variable_name)
     response = {}
 
@@ -254,7 +275,6 @@ def add_variable():
                 current_variables.append(formatted_variable)
                 template.template_variables = ",".join(current_variables)
                 session.commit()
-
 
                 response['status'] = 'success'
                 response['message'] = f'Variable {formatted_variable} added successfully!'

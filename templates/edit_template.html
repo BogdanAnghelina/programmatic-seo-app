@@ -75,17 +75,15 @@
                                 </span>
                             {% endfor %}
                         </div>
-                        <!-- Existing Add New Variable form in edit_template.html -->
-                        <h4 class="mt-4">Add New Variable:</h4>
-                        <form action="/add_variable" method="post" id="add_variable_form">
-                            <!-- Add this line to include the template_id -->
-                            <input type="hidden" name="template_id" value="{{ template_id }}">
-                            <div class="form-group">
-                                <input type="text" name="variable_name" class="form-control" id="variable_name" placeholder="Enter variable e.g. [name]">
-                            </div>
-                            <input type="submit" name="add_variable" value="Add Variable" class="btn btn-secondary">
-                        </form>
-                    </div>
+                       <!-- Updated Add New Variable form in edit_template.html -->
+                      <h4 class="mt-4">Add New Variable:</h4>
+                      <form action="/edit_template/{{ template_id }}" method="post" id="add_variable_form">
+                          <input type="hidden" name="template_id" value="{{ template_id }}">
+                          <div class="form-group">
+                              <input type="text" id="variable_name" name="variable_name" class="form-control" placeholder="Enter variable e.g. [name]" style="max-width:400px;">
+                          </div><br><br>
+                          <input type="submit" name="add_variable" value="Add Variable" class="btn btn-secondary">
+                      </form>
                 </div>
             </div>
         </div>
@@ -98,6 +96,23 @@
 {% block scripts %}
 <script>
     $(document).ready(function(){
+        // Function to update CKEditor variable list
+        function updateCKEditorVariableList(variables) {
+            var richCombo = CKEDITOR.instances.template_content.ui.get('InsertVariable');
+            richCombo.startGroup( "Variables" );  // This is important to initiate the group
+            var panel = richCombo._.panel._.iframe.$.contentWindow.richCombo;
+            
+            // Clear the panel
+            while (panel.firstChild) {
+                panel.removeChild(panel.firstChild);
+            }
+            
+            // Add new items
+            for (var i = 0; i < variables.length; i++) {
+                richCombo.add(variables[i], variables[i], variables[i]);
+            }
+        }
+
         // Initialize CKEditor
         CKEDITOR.replace('template_content', {
             removePlugins: 'exportpdf',
@@ -138,59 +153,57 @@
         });
 
         // AJAX call to add a variable
-        $("#add_variable_form").submit(function(event) {
-            event.preventDefault();
-            var variableName = $("#variable_name").val();
-            var templateID = $("#template_id").val();
-            
-            $.ajax({
-                url: '/add_variable',
-                type: 'POST',
-                data: { variable_name: variableName, template_id: templateID },
-                success: function(response) {
-                    if (response.status === 'success') {
-                        $(".variable-button:last").after(`<span class="variable-button btn btn-light">${variableName} <button type="button" class="btn text-danger btn-sm delete-variable" data-variable="${variableName}">X</button></span>`);
-                        localStorage.setItem('activeTab', '#variables');
-                        $('.nav-tabs a[href="#variables"]').tab('show');
-                    } else {
-                        $("#flash-messages").append(`<div class="alert alert-warning" role="alert">${response.message}</div>`);
-                    }
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    $("#flash-messages").append(`<div class="alert alert-danger" role="alert">AJAX Error: ${textStatus}, ${errorThrown}</div>`);
-                }
-            });
-        });
-  
-        
-        // AJAX code to submit the form:
-        $("#update_template_form").submit(function(event) {
-            event.preventDefault();
-            var formData = $(this).serialize();
-            
-            $.ajax({
-                url: '/update_template',
-                type: 'POST',
-                data: formData,
-                success: function(response) {
-                    if (response.status === 'success') {
-                        $("#flash-messages").append(`<div class="alert alert-success" role="alert">${response.message}</div>`);
-                    } else {
-                        $("#flash-messages").append(`<div class="alert alert-warning" role="alert">${response.message}</div>`);
-                    }
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    $("#flash-messages").append(`<div class="alert alert-danger" role="alert">AJAX Error: ${textStatus}, ${errorThrown}</div>`);
-                }
-            });
-        });
 
-  
-        // AJAX call to delete a variable
+
+      // Function to reload CKEditor with new variables
+      function reloadCKEditorWithVariables(variables) {
+          if (CKEDITOR.instances.template_content) {
+              CKEDITOR.instances.template_content.destroy(true);
+          }
+      
+          CKEDITOR.replace('template_content', {
+              removePlugins: 'exportpdf',
+              extraPlugins: 'insertVariable',
+              toolbar: [
+                  ['InsertVariable'],
+                  ['Bold', 'Italic', 'Underline', 'Strike'],
+                  ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
+                  ['Font', 'FontSize', 'TextColor', 'BGColor'],
+                  ['Undo', 'Redo']
+              ]
+          });
+      
+          CKEDITOR.on('instanceReady', function(ev) {
+              var editor = ev.editor;
+              editor.ui.addRichCombo('InsertVariable', {
+                  className: 'cke_button__insertvariable_label',
+                  label: '+ Variable',
+                  title: '+ Add variable',
+                  toolbar: 'insert',
+                  panel: {
+                      css: [ CKEDITOR.skin.getPath('editor') ].concat(editor.config.contentsCss),
+                      multiSelect: false,
+                      attributes: { 'aria-label': 'Variables' }
+                  },
+                  init: function() {
+                      for (var i = 0; i < variables.length; i++) {
+                          this.add(variables[i], variables[i], variables[i]);
+                      }
+                  },
+                  onClick: function(value) {
+                      editor.insertText(value);
+                  }
+              });
+          });
+      }
+
+
+        
+        // Your existing AJAX code for deleting a variable
         $(document).on('click', '.delete-variable', function() {
             let variableToDelete = $(this).data('variable');
             var templateID = $("#template_id").val();
-
+        
             $.ajax({
                 url: '/delete_variable',
                 type: 'POST',
@@ -198,6 +211,12 @@
                 success: function(response) {
                     if (response.status === 'success') {
                         $('span.variable-button:contains(' + variableToDelete + ')').remove();
+                        var currentVariables = {{ variables|tojson }};
+                        var index = currentVariables.indexOf(variableToDelete);
+                        if (index > -1) {
+                            currentVariables.splice(index, 1);
+                        }
+                        reloadCKEditorWithVariables(currentVariables);
                     } else {
                         console.error("Failed to delete variable:", response.message);
                     }
@@ -207,12 +226,9 @@
                 }
             });
         });
-        
-        // Local storage for tab persistence
-        $("#add_variable_form").on('submit', function(e) {
-            localStorage.setItem('activeTab', '#variables');
-        });
 
+
+        // Local storage for tab persistence
         let activeTab = localStorage.getItem('activeTab');
         if(activeTab){
             $('.nav-tabs a[href="' + activeTab + '"]').tab('show');
