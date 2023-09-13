@@ -79,22 +79,28 @@ def new_template():
         elif 'add_variable' in request.form:
             variable_name = request.form['variable_name']
             formatted_variable = format_variable(variable_name)
-
+    
             if not formatted_variable:
                 flash('Variable can only contain letters, numbers, and underscores.')
                 return redirect(url_for('new_template'))
-
+    
             if not draft:
                 draft = Template(template_name="Draft", template_content='', draft=True, user_id=current_user.id)
                 session.add(draft)
                 session.commit()
-
+    
             current_variables = draft.template_variables.split(",") if draft.template_variables else []
+            if formatted_variable in current_variables:
+                flash(f'Variable {formatted_variable} already exists.')
+                return redirect(url_for('new_template'))
+    
             current_variables.append(formatted_variable)
             draft.template_variables = ",".join(current_variables)
             session.commit()
             flash(f'Variable {formatted_variable} added successfully!')
+    
             return redirect(url_for('new_template'))
+
 
         elif 'delete_variable' in request.form:
             variable_to_delete = request.form['delete_variable']
@@ -129,9 +135,6 @@ def saved_templates():
 
 
 
-
-
-
 @app.route('/edit_template/<int:template_id>', methods=['GET', 'POST'])
 @login_required
 def edit_template(template_id):
@@ -149,24 +152,19 @@ def edit_template(template_id):
                 flash('Variable can only contain letters, numbers, and underscores.')
             else:
                 current_variables = template_data.template_variables.split(",") if template_data.template_variables else []
-                current_variables.append(formatted_variable)
-                template_data.template_variables = ",".join(current_variables)
-                session.commit()
-                flash(f'Variable {formatted_variable} added successfully!')
+                if formatted_variable in current_variables:
+                    flash(f'Variable {formatted_variable} already exists.')
+                else:
+                    current_variables.append(formatted_variable)
+                    template_data.template_variables = ",".join(current_variables)
+                    session.commit()
+                    flash(f'Variable {formatted_variable} added successfully!')
 
     variables = template_data.template_variables.split(",") if template_data.template_variables else []
     return render_template('edit_template.html', template=template_data, variables=variables,
                            template_name=template_data.template_name, template_id=template_id,
                            template_content=template_data.template_content)
-
-
-
-
-
-
-
-
-
+  
 
 
 @app.route('/get_template_data', methods=['GET'])
@@ -227,24 +225,18 @@ def get_variables():
 
 
 
-
-
 @app.route('/add_variable', methods=['POST'])
 def add_variable():
     variable_name = request.form.get('variable_name')
     template_id = request.form.get('template_id')
     
-    # Debug line added here
     print(f"Debug: Received variable_name: {variable_name}, template_id: {template_id}")
 
-    # Add this check
     if variable_name is None or template_id is None:
         return jsonify(status='error', message='Variable name and template ID are required.'), 400
 
-
-    # Add this check
-    if variable_name is None:
-        return jsonify(status='error', message='Variable name is required.'), 400
+    # Replace spaces with underscores
+    variable_name = variable_name.replace(' ', '_')
 
     formatted_variable = format_variable(variable_name)
     response = {}
@@ -255,21 +247,19 @@ def add_variable():
         return jsonify(response), 400
     else:
         try:
+            template = None
             if template_id:
                 # This is for edit_template
                 template = session.query(Template).filter_by(id=template_id, user_id=current_user.id).first()
-                if not template:
-                    response['status'] = 'error'
-                    response['message'] = 'Template not found.'
-                    return jsonify(response), 400
             else:
                 # This is for new_template (draft)
                 template = session.query(Template).filter_by(draft=True, user_id=current_user.id).first()
-                if not template:
-                    template = Template(template_name="Draft", template_content='', draft=True, user_id=current_user.id)
-                    session.add(template)
-                    session.commit()
             
+            if not template:
+                response['status'] = 'error'
+                response['message'] = 'Template not found.'
+                return jsonify(response), 400
+
             current_variables = template.template_variables.split(",") if template.template_variables else []
             if formatted_variable not in current_variables:
                 current_variables.append(formatted_variable)
@@ -288,11 +278,7 @@ def add_variable():
             response['status'] = 'error'
             response['message'] = f'An unexpected error occurred: {str(e)}'
             return jsonify(response), 500
-
-
-
-
-
+          
 
 
 @app.route('/delete_variable', methods=['POST'])
@@ -353,7 +339,7 @@ def update_template():
             'message': 'Template updated successfully.'
         }
 
-    return jsonify({'status': 'success', 'message': 'Template updated successfully.'})
+    return redirect(url_for('edit_template', template_id=template_id))
 
 
 

@@ -30,7 +30,7 @@
                         <div class="card template-card">
                             <div class="card-body">
                                 <h5 class="card-title">{{ template.template_name }}</h5>
-                                <p class="card-text">{{ template.template_content|strip_tags|truncate(100, True) }}</p>
+                                <p class="card-text">{{ template.template_content|strip_tags|truncate(100, True)|safe }}</p>
                             </div>
                             <div class="card-footer">
                                 <a href="{{ url_for('edit_template', template_id=template.id) }}">Edit</a>
