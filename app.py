@@ -17,6 +17,7 @@ class User(UserMixin):
         self.id = user_id
 
 def format_variable(variable):
+    variable = variable.replace(" ", "_")
     if not re.match(r'^[a-zA-Z0-9_]*$', variable):
         return ''
     return f"[{variable.lower()}]"
@@ -77,9 +78,15 @@ def new_template():
             return redirect(url_for('new_template'))
 
         elif 'add_variable' in request.form:
-            variable_name = request.form['variable_name']
+            variable_name = request.form['variable_name'].strip()  # Trim white spaces
+            
+            # Check for empty variable_name
+            if not variable_name:
+                flash('Variable cannot be empty!')
+                return redirect(url_for('new_template'))
+
             formatted_variable = format_variable(variable_name)
-    
+
             if not formatted_variable:
                 flash('Variable can only contain letters, numbers, and underscores.')
                 return redirect(url_for('new_template'))
@@ -145,11 +152,18 @@ def edit_template(template_id):
 
     if request.method == 'POST':
         if 'add_variable' in request.form:
-            variable_name = request.form['variable_name']
+            variable_name = request.form['variable_name'].strip()  # Trim white spaces
+            
+            # Check for empty variable_name
+            if not variable_name:
+                flash('Variable cannot be empty!')
+                return redirect(url_for('edit_template', template_id=template_id))
+
             formatted_variable = format_variable(variable_name)
 
             if not formatted_variable:
                 flash('Variable can only contain letters, numbers, and underscores.')
+                return redirect(url_for('edit_template', template_id=template_id))
             else:
                 current_variables = template_data.template_variables.split(",") if template_data.template_variables else []
                 if formatted_variable in current_variables:
