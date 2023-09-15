@@ -75,7 +75,7 @@ def new_template():
             session.commit()
 
             flash('Template saved successfully!')
-            return redirect(url_for('new_template'))
+            return redirect(url_for('edit_template', template_id=draft.id))
 
         elif 'add_variable' in request.form:
             variable_name = request.form['variable_name'].strip()  # Trim white spaces
