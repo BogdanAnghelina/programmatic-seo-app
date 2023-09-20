@@ -23,11 +23,11 @@
         <div class="col">
             <h2>Edit Template: {{ template_name }}</h2>
 
-            {% with messages = get_flashed_messages() %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
             <div class="mt-4">
-                {% for message in messages %}
-                <div class="alert alert-warning" role="alert">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'warning' }}" role="alert">
                     {{ message }}
                 </div>
                 {% endfor %}
@@ -92,7 +92,36 @@
                 </div>
 
                 <div class="tab-pane fade" id="publish" role="tabpanel">
-                    <h4 class="text-center">Publish your template on WordPress!</h4>
+                    <h4>Publish your template on WordPress!</h4>
+
+
+                {% if user_db.connection_status == 'connected' %}
+                    <button class="btn btn-success">Connected to {{ user_db.wp_url|replace("http://", "")|replace("https://", "")|replace("/", "") }}</button>
+                {% else %}
+                    <button class="btn btn-secondary">Not Connected</button>
+                {% endif %}
+
+                  
+                <!-- WordPress Connection Form -->
+                <form action="{{ url_for('edit_template', template_id=template_id) }}" method="post" class="mt-4">
+                    <div class="form-group">
+                        <label for="wp_url">WordPress URL:</label>
+                        <input type="text" name="wp_url" id="wp_url" class="form-control" style="max-width:400px" placeholder="WordPress URL" required>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label for="wp_user">WordPress Username:</label>
+                        <input type="text" name="wp_user" id="wp_user" class="form-control" style="max-width:400px" placeholder="WordPress Username" required>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <label for="wp_app_password">Application Password:</label>
+                        <input type="password" name="wp_app_password" id="wp_app_password" class="form-control" style="max-width:400px" placeholder="Application Password" required>
+                    </div>
+                    <br>
+                    <button type="submit" name="connect_wp" class="btn btn-primary">Connect to WordPress</button>
+                </form>
+                <!-- End of WordPress Connection Form -->
                   </div>
                 </div>
                   
@@ -246,6 +275,33 @@
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
             localStorage.setItem('activeTab', $(e.target).attr('href'));
         });
+    });
+
+
+
+
+      function verifyWPConnection() {
+        fetch('/verify_wp_connection')
+        .then(response => response.json())
+        .then(data => {
+            let button = document.getElementById('connectionStatus');
+            if (data.status === 'connected') {
+                button.className = 'btn btn-success';
+            } else if (data.status === 'no_credentials') {
+                button.className = 'btn btn-warning';
+            } else {
+                button.className = 'btn btn-danger';
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+
+    $('#editTemplateTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        if (e.target.getAttribute('aria-controls') === 'publish') {
+            verifyWPConnection();
+        }
     });
 </script>
 {% endblock %}

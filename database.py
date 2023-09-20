@@ -29,3 +29,14 @@ class Template(Base):
     draft = Column(Boolean, default=True)
     user_id = Column(String(50), nullable=False)
     active_tab = Column(String(50), nullable=True)
+
+class UserDB(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(50))
+    password = Column(String(50))
+    wp_url = Column(String(200))
+    wp_user = Column(String(50))
+    wp_app_password = Column(String(50))
+    connection_status = Column(String, default="not_connected")

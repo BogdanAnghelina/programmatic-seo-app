@@ -2,8 +2,11 @@ from flask import Flask, render_template, redirect, url_for, flash, request, jso
 from flask_login import current_user, LoginManager, UserMixin, login_user, login_required, logout_user
 from sqlalchemy.exc import OperationalError, InvalidRequestError, PendingRollbackError, InterfaceError
 from sqlalchemy.orm.exc import NoResultFound
-from database import Template, Session, session
+from database import Template, Session, session, UserDB
+import requests
+import base64
 import re
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
@@ -12,7 +15,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-class User(UserMixin):
+class FlaskUser(UserMixin):
     def __init__(self, user_id):
         self.id = user_id
 
@@ -30,17 +33,33 @@ def strip_tags(input_string):
 app.jinja_env.filters['strip_tags'] = strip_tags
 
 
+
+@app.route('/check_connection', methods=['GET'])
+@login_required
+def check_connection():
+    user_db = session.query(UserDB).filter_by(username=current_user.id).first()
+    if user_db and user_db.connection_status == "connected":
+        return jsonify(status='connected')
+    else:
+        return jsonify(status='not_connected')
+
+
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id=user_id)
-
+    return FlaskUser(user_id=user_id)
+  
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         if request.form['username'] == 'admin' and request.form['password'] == 'password':
-            user = User(user_id='admin')
-            login_user(user)
+            user_db = session.query(UserDB).filter_by(username='admin').first()
+            if not user_db:
+                new_user = UserDB(username='admin', password='password')
+                session.add(new_user)
+                session.commit()
+            user = FlaskUser(user_id='admin')  # Initialize the user object from flask_login
+            login_user(user)  # Log the user in
             return redirect(url_for('new_template'))
         else:
             flash('Invalid credentials.')
@@ -134,6 +153,8 @@ def new_template():
     return render_template('new_template.html', template_name=template_name, template_content=template_content, variables=variables)
 
 
+
+
 @app.route('/saved_templates', methods=['GET'])
 @login_required
 def saved_templates():
@@ -141,43 +162,87 @@ def saved_templates():
     return render_template('saved_templates.html', templates=templates)
 
 
+  
 
 @app.route('/edit_template/<int:template_id>', methods=['GET', 'POST'])
 @login_required
 def edit_template(template_id):
+    user_db = session.query(UserDB).filter_by(username=current_user.id).first()  # Move this line here
     template_data = session.query(Template).filter_by(id=template_id, user_id=current_user.id).first()
+
     if template_data is None:
         flash("Template not found.")
         return redirect(url_for('saved_templates'))
 
     if request.method == 'POST':
         if 'add_variable' in request.form:
-            variable_name = request.form['variable_name'].strip()  # Trim white spaces
-            
-            # Check for empty variable_name
+            variable_name = request.form['variable_name'].strip()
             if not variable_name:
                 flash('Variable cannot be empty!')
                 return redirect(url_for('edit_template', template_id=template_id))
-
             formatted_variable = format_variable(variable_name)
-
             if not formatted_variable:
                 flash('Variable can only contain letters, numbers, and underscores.')
                 return redirect(url_for('edit_template', template_id=template_id))
+            current_variables = template_data.template_variables.split(",") if template_data.template_variables else []
+            if formatted_variable in current_variables:
+                flash(f'Variable {formatted_variable} already exists.')
             else:
-                current_variables = template_data.template_variables.split(",") if template_data.template_variables else []
-                if formatted_variable in current_variables:
-                    flash(f'Variable {formatted_variable} already exists.')
-                else:
-                    current_variables.append(formatted_variable)
-                    template_data.template_variables = ",".join(current_variables)
+                current_variables.append(formatted_variable)
+                template_data.template_variables = ",".join(current_variables)
+                session.commit()
+                flash(f'Variable {formatted_variable} added successfully!')
+        elif 'connect_wp' in request.form:
+            # Clear old data first
+            if user_db:
+                user_db.wp_url = None
+                user_db.wp_user = None
+                user_db.wp_app_password = None
+                user_db.connection_status = None
+                session.commit()  # Commit immediately
+        
+            # Get new data from form
+            wp_url = request.form['wp_url']
+            wp_user = request.form['wp_user']
+            wp_app_password = request.form['wp_app_password']
+            
+            api_url = f"{wp_url}/wp-json/wp/v2/users/me"
+            credentials = f"{wp_user}:{wp_app_password}"
+            headers = {'Authorization': f'Basic {base64.b64encode(credentials.encode()).decode()}'}
+        
+            try:
+                response = requests.get(api_url, headers=headers)
+                user_db = session.query(UserDB).filter_by(username=current_user.id).first()  # Re-query user_db
+                if response.status_code == 200:
+                    flash('Successfully connected to WordPress!', 'success')
+                    if user_db:  # Check if user_db is not None
+                        user_db.wp_url = wp_url
+                        user_db.wp_user = wp_user
+                        user_db.wp_app_password = wp_app_password
+                        user_db.connection_status = "connected"
                     session.commit()
-                    flash(f'Variable {formatted_variable} added successfully!')
+                else:
+                    if user_db:  # Clear old data
+                        user_db.wp_url = None
+                        user_db.wp_user = None
+                        user_db.wp_app_password = None
+                        user_db.connection_status = None
+                    session.commit()
+                    flash(f'Failed to connect to WordPress: {response.json()}')
+        
+            except Exception as e:
+                flash('The URL, user, or password for this connection is wrong. Please make sure you use the app password instead of your user password in WordPress.', 'error')
+                user_db = session.query(UserDB).filter_by(username=current_user.id).first()  # Re-query user_db
+                if user_db:
+                    user_db.connection_status = "not_connected"
+                session.commit()
 
     variables = template_data.template_variables.split(",") if template_data.template_variables else []
     return render_template('edit_template.html', template=template_data, variables=variables,
                            template_name=template_data.template_name, template_id=template_id,
-                           template_content=template_data.template_content)
+                           template_content=template_data.template_content, user_db=user_db)
+
+
   
 
 
@@ -371,6 +436,57 @@ def extract_variables():
             return render_template('extract_variables.html', variables=variables)
 
     return render_template('extract_variables.html')
+
+
+
+
+
+
+
+
+@app.route('/verify_wp_connection', methods=['GET'])
+@login_required
+def verify_wp_connection():
+    user_db = None
+    try:
+        user_db = session.query(UserDB).filter_by(username=current_user.id).first()
+        if user_db is None:
+            return jsonify(status='no_credentials')
+    except Exception as e:
+        return jsonify(status='database_error')
+    
+    try:
+        wp_url = user_db.wp_url
+        wp_user = user_db.wp_user
+        wp_app_password = user_db.wp_app_password
+        api_url = f"{wp_url}/wp-json/wp/v2/users/me"
+        credentials = f"{wp_user}:{wp_app_password}"
+        headers = {'Authorization': f'Basic {base64.b64encode(credentials.encode()).decode()}'}
+        
+        response = requests.get(api_url, headers=headers)
+        if response.status_code == 200:
+            user_db.connection_status = "connected"
+        else:
+            user_db.connection_status = "not_connected"
+    except Exception as e:
+        if user_db is not None:
+            user_db.connection_status = "not_connected"
+    
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        return jsonify(status='database_error')
+    
+    return jsonify(status=user_db.connection_status if user_db else 'error')
+
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':

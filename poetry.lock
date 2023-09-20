@@ -40,7 +40,7 @@ msgpack = ["msgpack-python (>=0.5,<0.6)"]
 name = "certifi"
 version = "2023.7.22"
 description = "Python package for providing Mozilla's CA Bundle."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -59,7 +59,7 @@ pycparser = "*"
 name = "charset-normalizer"
 version = "3.2.0"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7.0"
 
@@ -240,7 +240,7 @@ lxml = ["lxml"]
 name = "idna"
 version = "3.4"
 description = "Internationalized Domain Names in Applications (IDNA)"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.5"
 
@@ -544,6 +544,14 @@ ujson = ">=3.0.0"
 test = ["coverage", "pytest-cov", "pytest", "pyflakes", "pycodestyle", "pylint"]
 
 [[package]]
+name = "python-wordpress-xmlrpc"
+version = "2.3"
+description = "WordPress XML-RPC API Integration Library"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "pytoolconfig"
 version = "1.2.5"
 description = "Python tool configuration"
@@ -607,7 +615,7 @@ yapf = ["yapf", "whatthepatch (>=1.0.2,<2.0.0)"]
 name = "requests"
 version = "2.31.0"
 description = "Python HTTP for Humans."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -756,7 +764,7 @@ python-versions = ">=3.8"
 name = "urllib3"
 version = "1.26.15"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 
@@ -840,7 +848,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-ena
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10.0,<3.11"
-content-hash = "accad27e5df1669d7814aaa1bfecb1dd5b299535d247bb89cd70cece70833632"
+content-hash = "572615c3d08d4c228e4226df61e05a4005f04c3c9d020fd5ad777ac2004a465c"
 
 [metadata.files]
 blinker = []
@@ -890,6 +898,7 @@ pycparser = []
 pyflakes = []
 pylev = []
 python-lsp-jsonrpc = []
+python-wordpress-xmlrpc = []
 pytoolconfig = []
 pywin32-ctypes = []
 replit-python-lsp-server = []
