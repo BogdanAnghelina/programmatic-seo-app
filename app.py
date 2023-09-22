@@ -167,7 +167,7 @@ def saved_templates():
 @app.route('/edit_template/<int:template_id>', methods=['GET', 'POST'])
 @login_required
 def edit_template(template_id):
-    user_db = session.query(UserDB).filter_by(username=current_user.id).first()  # Move this line here
+    user_db = session.query(UserDB).filter_by(username=current_user.id).first()
     template_data = session.query(Template).filter_by(id=template_id, user_id=current_user.id).first()
 
     if template_data is None:
@@ -236,11 +236,41 @@ def edit_template(template_id):
                 if user_db:
                     user_db.connection_status = "not_connected"
                 session.commit()
+        elif 'publish_wp' in request.form:
+            publish_type = request.form['publish_type']
+            if user_db and user_db.connection_status == "connected":
+                wp_url = user_db.wp_url
+                wp_user = user_db.wp_user
+                wp_app_password = user_db.wp_app_password
+                credentials = f"{wp_user}:{wp_app_password}"
+                headers = {'Authorization': f'Basic {base64.b64encode(credentials.encode()).decode()}'}
+                api_url = f"{wp_url}/wp-json/wp/v2/{publish_type}"
+                data = {
+                    "title": template_data.template_name,
+                    "content": template_data.template_content,
+                    "status": "draft"
+                }
+                try:
+                    response = requests.post(api_url, headers=headers, json=data)
+                    if response.status_code == 201:
+                        flash(f'Successfully published as {publish_type[:-1].title()} in WordPress', 'success')
+                    else:
+                        flash(f'Failed to publish to WordPress: {response.json()}', 'error')
+                except Exception as e:
+                    flash(f'An error occurred while publishing to WordPress: {str(e)}', 'error')
+            else:
+                flash('You are not connected to WordPress. Connect first to publish.', 'warning')
 
     variables = template_data.template_variables.split(",") if template_data.template_variables else []
     return render_template('edit_template.html', template=template_data, variables=variables,
                            template_name=template_data.template_name, template_id=template_id,
                            template_content=template_data.template_content, user_db=user_db)
+
+
+
+
+
+
 
 
   
@@ -479,13 +509,6 @@ def verify_wp_connection():
         return jsonify(status='database_error')
     
     return jsonify(status=user_db.connection_status if user_db else 'error')
-
-
-
-
-
-
-
 
 
 

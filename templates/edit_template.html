@@ -62,11 +62,11 @@
                                 <label for="template_name">Template Name:</label>
                                 <input type="text" id="template_name" name="template_name" class="form-control" value="{{ template_name }}">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group mt-3">
                                 <label for="template_content">Template Content:</label>
                                 <textarea name="template_content" id="template_content" class="form-control">{{ template_content }}</textarea>
                             </div>
-                            <input type="submit" name="update_template" value="Update template" class="btn btn-primary">
+                            <input type="submit" name="update_template" value="Update template" class="btn btn-dark mt-3">
                         </form>
                     </div>
                     <div class="tab-pane fade" id="variables" role="tabpanel">
@@ -84,16 +84,15 @@
                           <input type="hidden" name="template_id" value="{{ template_id }}">
                           <div class="form-group">
                               <input type="text" id="variable_name" name="variable_name" class="form-control" placeholder="Enter variable e.g. [name]" style="max-width:400px;">
-                          </div><br><br>
-                          <input type="submit" name="add_variable" value="Add Variable" class="btn btn-secondary">
+                          </div>
+                          <input type="submit" name="add_variable" value="Add Variable" class="btn btn-dark mt-3">
                       </form>
                       
                 
                 </div>
 
                 <div class="tab-pane fade" id="publish" role="tabpanel">
-                    <h4>Publish your template on WordPress!</h4>
-
+                    <h4>Status</h4>
 
                 {% if user_db.connection_status == 'connected' %}
                     <button class="btn btn-success">Connected to {{ user_db.wp_url|replace("http://", "")|replace("https://", "")|replace("/", "") }}</button>
@@ -101,6 +100,7 @@
                     <button class="btn btn-secondary">Not Connected</button>
                 {% endif %}
 
+                    <h4 class="mt-4">Connect to your WordPress website</h4>
                   
                 <!-- WordPress Connection Form -->
                 <form action="{{ url_for('edit_template', template_id=template_id) }}" method="post" class="mt-4">
@@ -119,9 +119,24 @@
                         <input type="password" name="wp_app_password" id="wp_app_password" class="form-control" style="max-width:400px" placeholder="Application Password" required>
                     </div>
                     <br>
-                    <button type="submit" name="connect_wp" class="btn btn-primary">Connect to WordPress</button>
+                    <button type="submit" name="connect_wp" class="btn btn-dark">Connect to WordPress</button>
                 </form>
-                <!-- End of WordPress Connection Form -->
+
+
+                    <h4 class="mt-4">Publish your template on WordPress!</h4>
+
+                <form method="post" class="mt-4">
+                    <div class="form-group">
+                        <label for="publishType">Publish as:</label>
+                        <select name="publish_type" id="publishType" class="form-control" style="max-width:400px !important">
+                            <option value="posts">Post</option>
+                            <option value="pages">Page</option>
+                        </select>
+                    
+                    </div>
+                    <button type="submit" name="publish_wp" class="btn btn-dark mt-4">Publish to WordPress</button>
+                </form>
+
                   </div>
                 </div>
                   
