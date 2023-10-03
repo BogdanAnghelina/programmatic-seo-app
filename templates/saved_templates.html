@@ -21,7 +21,7 @@
 
             <!-- If no templates exist, show message -->
             {% if templates|length == 0 %}
-                <p class="text-center">You have no templates yet.</p>
+                <p class="text-center">You have no templates yet. Click on "Add New Template" to get started.</p>
             {% else %}
                 <!-- Template cards view -->
                 <div id="template-cards" class="row mt-4">
@@ -33,7 +33,9 @@
                                 <p class="card-text">{{ template.template_content|strip_tags|truncate(228, True)|safe }}</p>
                             </div>
                             <div class="card-footer">
+                                <button class="btn btn-outline-danger delete-template" data-id="{{ template.id }}">Delete</button>
                                 <a href="{{ url_for('edit_template', template_id=template.id) }}" class="btn btn-primary" style="float:right !important">Edit</a>
+
                             </div>
                         </div>
                     </div>
@@ -43,4 +45,32 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $(document).on('click', '.delete-template', function() {
+            let templateID = $(this).attr('data-id');
+            $.ajax({
+                url: '/delete_template',
+                type: 'POST',
+                data: { template_id: templateID },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        // Remove the template card from the DOM
+                        $(`.delete-template[data-id='${templateID}']`).closest('.col-lg-3').remove();
+                    } else {
+                        // Handle error
+                        alert('Failed to delete template.');
+                    }
+                },
+                error: function() {
+                    // Handle error
+                    alert('An error occurred.');
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

@@ -10,11 +10,6 @@
             margin-right: 5px;
             display: inline-block;
         }
-
-        .cke_button__insertvariable_label {
-            background-color: green !important;
-            color: #fff !important;
-        }
     </style>
 {% endblock %}
 
@@ -24,136 +19,266 @@
         <div class="col">
             <h2>New Template</h2>
 
-            {% with messages = get_flashed_messages() %}
+            <!-- Flash Message Section Start -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-            <div class="mt-4">
-                {% for message in messages %}
-                <div class="alert alert-warning" role="alert">
+            <div class="mt-3">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert">
                     {{ message }}
                 </div>
                 {% endfor %}
             </div>
             {% endif %}
             {% endwith %}
-
-            <!-- Nav tabs -->
-            <ul class="nav nav-tabs mt-4" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active" id="template-tab" data-toggle="tab" href="#template" role="tab">Template</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="variables-tab" data-toggle="tab" href="#variables" role="tab">Variables</a>
-                </li>
-            </ul>
+            
+            <!-- This is the div where flash messages from AJAX operations will go -->
+            <div id="flash-messages"></div>
+          
+            <!-- Detailed editing view -->
+            <div id="template-details" class="mt-4">
+                <!-- Tab links -->
+                <ul class="nav nav-tabs" id="editTemplateTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="edit-template-tab" data-toggle="tab" href="#template" role="tab" aria-controls="template" aria-selected="true">Template</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="edit-variables-tab" data-toggle="tab" href="#variables" role="tab" aria-controls="variables" aria-selected="false">Variables</a>
+                    </li>
+                </ul>
 
             <!-- Tab panes -->
             <div class="tab-content mt-4">
                 <div class="tab-pane fade show active" id="template" role="tabpanel">
-                    <form action="/new_template" method="post">
-                        <div class="form-group">
-                            <label for="template_name">Template Name:</label>
-                            <input type="text" id="template_name" name="template_name" class="form-control" value="{{ template_name }}">
-                        </div><br>
-
-                        <div class="form-group">
+                    <form id="new_template_form" action="/new_template" method="post">
+                        
+                        <div class="form-group d-flex align-items-end">
+                            <div style="margin-right: 10px;">
+                                <label for="title_variable_dropdown" class="d-none">Variable</label>
+                                <select id="title_variable_dropdown" class="variable-dropdown btn btn-success" style="width: 120px; height: 38px; color: white; text-align: left;">
+                                    <option disabled selected style="text-align: center; background-color: green; color: white;">+Variable</option>
+                                    {% for variable in variables %}
+                                        <option value="{{ variable }}">[{{ variable }}]</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="flex-grow-1">
+                                <label for="template_name">Template Name:</label>
+                                <input type="text" id="template_name" name="template_name" class="form-control" value="{{ template_name }}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mt-3">
                             <label for="template_content">Template Content:</label>
-                            <textarea name="template_content" id="template_content" class="form-control">{{ saved_content|default('') }}</textarea>
-                        </div><br>
-
-                        <input type="submit" name="save_template" value="Save template" class="btn btn-primary">
+                            <div id="editor-container" style="height: 400px;"></div>
+                            <textarea name="template_content" id="hidden_template_content" style="display:none;"></textarea>
+                        </div>
+                        
+                        <button type="submit" name="save_template" class="btn btn-dark mt-4">Save template</button>
                     </form>
                 </div>
 
                 <div class="tab-pane fade" id="variables" role="tabpanel">
                     <h4>Existing Variables:</h4>
-                    <div>
+                    <div class="existing-variables">
                     {% for variable in variables %}
-                        <span class="variable-button btn btn-light">{{ variable }} 
-                            <form style="display: inline;" action="/new_template" method="post">
-                            <button type="submit" name="delete_variable" value="{{ variable }}" class="btn text-danger btn-sm">X</button>
-                            </form>
+                        <span class="variable-button btn btn-light">{{ variable }}
+
+                            <button type="button" class="delete-variable btn text-danger btn-sm" data-variable="{{ variable }}">X</button>
                         </span>
                     {% endfor %}
-                    </div><br>
+                    </div>
                     <h4 class="mt-4">Add New Variable:</h4>
-                    <form action="/new_template" method="post" name="add_variable_form">
-                        <div class="form-group">
-                            <input type="text" name="variable_name" class="form-control" placeholder="Enter variable e.g. [name]" style="max-width:400px;">
-                        </div><br><br>
-                        <input type="submit" name="add_variable" value="Add Variable" class="btn btn-secondary">
-                    </form>
+                    <div class="form-group">
+                        <input type="text" id="new_variable_input" class="form-control" placeholder="Enter a variable e.g. my_first_variable" style="max-width:400px;">
+                    </div>
+                    <button id="add_variable_button" class="btn btn-dark mt-4">Add Variable</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.ckeditor.com/4.16.0/full/ckeditor.js"></script>
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 {% endblock %}
 
 
 {% block scripts %}
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
     $(document).ready(function(){
-        // Check for the saved tab in local storage and activate it
+
+        let existingVariables = new Set();  // To store unique variables 
+
+        function addVariable() {
+          const variableInput = document.getElementById("variableInput");
+          const variableValue = variableInput.value.trim();
+
+          if (existingVariables.has(variableValue)) {
+            alert("Duplicate variable. Please enter a unique variable.");
+            variableInput.value = '';  // Clear input
+            return;
+          }
+
+          if (variableValue !== '') {
+            existingVariables.add(variableValue);  // Add variable to Set
+            const variablesList = document.getElementById("variablesList");
+            const newVariable = document.createElement("li");
+            newVariable.textContent = variableValue;
+            variablesList.appendChild(newVariable);
+
+            // Your existing code to send the variable to backend, if any.
+          }
+
+          variableInput.value = '';  // Clear input
+        }
+     
+        // Event listener for sidebar link to new_template
+        $('#sidebar_new_template_link').on('click', function() {
+            resetDraft();
+        });
+      
+        function checkEmptyFields() {
+            let templateName = $('#template_name').val();
+            let templateContent = quill.getText().trim();
+            if (templateName === '' || templateContent === '') {
+                alert("Both template name and content must be filled out.");
+                return false;
+            }
+            return true;
+        }
+
+        function handleDraftPublish() {
+            let isDraft = $('#is_draft').is(':checked');
+            $('#hidden_draft_status').val(isDraft ? 1 : 0);
+        }
+      
         let activeTab = localStorage.getItem('activeTab');
         if(activeTab){
             $('.nav-tabs a[href="' + activeTab + '"]').tab('show');
         }
 
-        // Store the current active tab in local storage
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
             localStorage.setItem('activeTab', $(e.target).attr('href'));
         });
 
-        // Set the Variables tab as active after submitting the "Add New Variable" form
         $("form[name='add_variable_form']").on('submit', function(e) {
             localStorage.setItem('activeTab', '#variables');
         });
 
-        // CKEditor Initialization
-        CKEDITOR.replace('template_content', {
-            removePlugins: 'exportpdf',
-            extraPlugins: 'insertVariable',
-            toolbar: [
-                ['InsertVariable'],
-                ['Bold', 'Italic', 'Underline', 'Strike'],
-                ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
-                ['Font', 'FontSize', 'TextColor', 'BGColor'],
-                ['Undo', 'Redo']
-            ]
+        var quill = new Quill('#editor-container', {
+            theme: 'snow'
         });
 
-        // Custom CKEditor Plugin for inserting variables
-        CKEDITOR.plugins.add('insertVariable', {
-            init: function(editor) {
-                editor.ui.addRichCombo('InsertVariable', {
-                    className: 'cke_button__insertvariable_label',
-                    label: '+ Variable',
-                    title: '+ Add variable',
-                    toolbar: 'insert',
-                    panel: {
-                        css: [ CKEDITOR.skin.getPath('editor') ].concat(editor.config.contentsCss),
-                        multiSelect: false,
-                        attributes: { 'aria-label': 'Variables' }
-                    },
-                    init: function() {
-                        var variables = {{ variables|tojson }};
-                        for(var i = 0; i < variables.length; i++) {
-                            this.add(variables[i], variables[i], variables[i]);
-                        }
-                    },
-                    onClick: function(value) {
-                        editor.insertText(value);
-                    }
-                });
+        var variableDropdown = document.createElement('select');
+        variableDropdown.className = 'variable-dropdown btn btn-success';
+        variableDropdown.innerHTML = '<option disabled selected>Add Variable</option>';
+        
+        {% for variable in variables %}
+            variableDropdown.innerHTML += `<option value="{{ variable }}">{{ variable }}</option>`;
+        {% endfor %}
+        
+        variableDropdown.addEventListener('change', function() {
+            let selectedVariable = this.value;
+            this.selectedIndex = 0;
+            quill.insertText(quill.getSelection().index, '[' + selectedVariable + ']');
+        });
+
+        var toolbar = quill.getModule('toolbar');
+        toolbar.container.prepend(variableDropdown);
+
+        $('#new_template_form').on('submit', function() {
+            $('#hidden_template_content').val(quill.root.innerHTML);
+
+            if (!checkEmptyFields()) {
+                return false;
+            }
+
+            handleDraftPublish();
+        });
+
+        $('#title_variable_dropdown').on('change', function(){
+            var selectedVariable = '[' + $(this).val() + ']';
+            $(this).prop('selectedIndex', 0);
+            
+            var currentPosition = $('#template_name').prop('selectionStart');
+            var currentValue = $('#template_name').val();
+            var newValue = currentValue.substring(0, currentPosition) + selectedVariable + currentValue.substring(currentPosition);
+            $('#template_name').val(newValue);
+        });
+
+        $('#add_variable_button').on('click', function(e) {
+            e.preventDefault();
+            
+            let variableInput = $('#new_variable_input');
+            let variableToAdd = variableInput.val().trim().replace(/ +/g, '_');
+          
+            if (existingVariables.has(variableToAdd)) {
+                let flashMessage = $('<div>').addClass('alert alert-warning').text('Duplicate variable. Please enter a unique variable.');
+                $('#flash-messages').append(flashMessage);
+                variableInput.val(''); // Clear input
+                return false; // Make sure to return false to stop the function
+            }
+            existingVariables.add(variableToAdd);
+
+            existingVariables.add(variableToAdd); // Add variable to Set
+
+            let regex = /^[a-zA-Z0-9_]+$/;
+            if (!regex.test(variableToAdd)) {
+                let flashMessage = $('<div>').addClass('alert alert-warning').text('Special characters or empty variables are not allowed. You can use underscores to_separate_words.');
+                $('#flash-messages').append(flashMessage);
+                return false;
+            }
+            
+            $.ajax({
+                url: "/new_template",
+                type: "POST",
+                data: { 'add_variable': true, 'variable_name': variableToAdd },
+                success: function(response) {
+                $('#title_variable_dropdown').append(new Option('[' + variableToAdd + ']', variableToAdd));
+                $(variableDropdown).append(new Option('[' + variableToAdd + ']', variableToAdd));
+                
+                    let newVarSpan = $('<span></span>').text('[' + variableToAdd + ']').addClass('variable-button btn btn-light');
+                    let newVarButton = $('<button></button>').attr('type', 'submit').attr('name', 'delete_variable').attr('value', variableToAdd).addClass('btn text-danger btn-sm').text('X');
+                    let newVarForm = $('<form></form>').attr('style', 'display: inline;').attr('action', '/new_template').attr('method', 'post').append(newVarButton);
+                    newVarSpan.append(newVarForm);
+                    $('.existing-variables').append(newVarSpan);
+                    $('#new_variable_input').val('');
+                }
+            });
+        });
+
+        $('#new_variable_input').keypress(function(event) {
+            if (event.which === 13) {
+                event.preventDefault();
+                $('#add_variable_button').click();
             }
         });
+
+        $('.existing-variables').on('click', '.delete-variable', function(e) {
+            e.preventDefault();
+            let variableToDelete = $(this).data('variable');
+            
+            $.ajax({
+                url: "/new_template",
+                type: "POST",
+                data: { 'delete_variable': true, 'variable_name': variableToDelete },
+                success: function(response) {
+                    $(`option[value="${variableToDelete}"]`).remove(); // Remove from dropdowns
+                    $(e.target).closest('.variable-button').remove(); // Remove from UI
+                }
+            });
+        });
+
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetTab = urlParams.get('reset_tab');
+    
+        if (resetTab === 'true') {
+            localStorage.setItem('activeTab', '#template');
+        }
+
+      
     });
-
-  function setDefaultTab() {
-    localStorage.setItem('activeTab', '#template');
-  }
-
 </script>
 {% endblock %}

@@ -10,11 +10,22 @@
             margin-right: 5px;
             display: inline-block;
         }
-        .cke_button__insertvariable_label {
-            background-color: green !important;
-            color: #fff !important;
+
+        #title_variable_dropdown option:not(:disabled) {
+            background-color: white !important;
+            color: #000;
+        }
+      
+        #title_variable_dropdown:hover, .variable-dropdown:hover {
+            background-color: #212529 !important;          
+        }
+
+        .variable-dropdown option:first-child {
+            display: none;
         }
     </style>
+
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -22,12 +33,13 @@
     <div class="row">
         <div class="col">
             <h2>Edit Template: {{ template_name }}</h2>
-
+            
+            <!-- Flash Message Section Start -->
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-            <div class="mt-4">
+            <div class="mt-3">
                 {% for category, message in messages %}
-                <div class="alert alert-{{ 'success' if category == 'success' else 'warning' }}" role="alert">
+                <div class="alert alert-{{ category }}" role="alert">
                     {{ message }}
                 </div>
                 {% endfor %}
@@ -58,37 +70,52 @@
                     <div class="tab-pane fade show active" id="template" role="tabpanel">
                         <form id="update_template_form" action="/update_template" method="post">
                             <input type="hidden" name="template_id" id="template_id" value="{{ template_id }}">
-                            <div class="form-group">
+                          
+                            <div class="form-group d-flex align-items-end">
+                                <div style="margin-right: 10px;">
+                                    <label for="title_variable_dropdown" class="d-none">Variable</label> <!-- Hidden label -->
+                                    <select id="title_variable_dropdown" class="variable-dropdown btn btn-success" style="width: 120px; height: 38px; color: white; text-align: left;">
+                                        <option disabled selected style="text-align: center; background-color: green; color: white;">+Variable</option>
+                                    </select>
+                                </div>
+                              
+                            <div class="flex-grow-1">
                                 <label for="template_name">Template Name:</label>
                                 <input type="text" id="template_name" name="template_name" class="form-control" value="{{ template_name }}">
                             </div>
+                            </div>
+
                             <div class="form-group mt-3">
                                 <label for="template_content">Template Content:</label>
-                                <textarea name="template_content" id="template_content" class="form-control">{{ template_content }}</textarea>
+                                <div id="template_content" style="height: 400px;"></div>
+
+                                <!-- Hidden textarea to store Quill's content in HTML -->
+                                <textarea name="hidden_template_content" id="hidden_template_content" style="display:none;"></textarea>
                             </div>
-                            <input type="submit" name="update_template" value="Update template" class="btn btn-dark mt-3">
+                            <button type="submit" name="update_template" class="btn btn-dark mt-4">Update Template</button>
+
                         </form>
                     </div>
                     <div class="tab-pane fade" id="variables" role="tabpanel">
-                        <h4>Existing Variables:</h4>
-                        <div>
-                            {% for variable in variables %}
-                                <span class="variable-button btn btn-light">{{ variable }}
-                                    <button type="button" class="btn text-danger btn-sm delete-variable" data-variable="{{ variable }}">X</button>
-                                </span>
-                            {% endfor %}
-                        </div>
-                       <!-- Updated Add New Variable form in edit_template.html -->
+                      <h4>Existing Variables:</h4>
+                      <div id="container_for_existing_variables">
+                          {% for variable in variables %}
+                              <span class="variable-button btn btn-warning">
+                                  <span>{{ variable }}</span>
+                                  <button type="button" class="btn text-danger btn-sm delete-variable" data-variable="{{ variable }}">X</button>
+                              </span>
+                          {% endfor %}
+                      </div>
+
+                      <!-- Updated Add New Variable form in edit_template.html -->
                       <h4 class="mt-4">Add New Variable:</h4>
-                      <form action="/edit_template/{{ template_id }}" method="post" id="add_variable_form">
+                      <form id="add_variable_form">
                           <input type="hidden" name="template_id" value="{{ template_id }}">
                           <div class="form-group">
                               <input type="text" id="variable_name" name="variable_name" class="form-control" placeholder="Enter variable e.g. [name]" style="max-width:400px;">
                           </div>
-                          <input type="submit" name="add_variable" value="Add Variable" class="btn btn-dark mt-3">
-                      </form>
-                      
-                
+                          <button type="button" id="add_variable_button" class="btn btn-dark mt-3">Add Variable</button>
+                      </form>     
                 </div>
 
                 <div class="tab-pane fade" id="publish" role="tabpanel">
@@ -100,42 +127,46 @@
                     <button class="btn btn-secondary">Not Connected</button>
                 {% endif %}
 
+                {% if user_db.connection_status == 'connected' %}
+                    <h4 class="mt-4">Connect to another WordPress website</h4>
+                {% else %}
                     <h4 class="mt-4">Connect to your WordPress website</h4>
+                {% endif %}
+
                   
                 <!-- WordPress Connection Form -->
-                <form action="{{ url_for('edit_template', template_id=template_id) }}" method="post" class="mt-4">
-                    <div class="form-group">
-                        <label for="wp_url">WordPress URL:</label>
-                        <input type="text" name="wp_url" id="wp_url" class="form-control" style="max-width:400px" placeholder="WordPress URL" required>
+                <form action="{{ url_for('edit_template_wp_auth', template_id=template_id) }}" method="post" class="form-inline mt-3">
+                    <div class="form-group mb-2">
+                        <input type="text" class="form-control" name="base_url" placeholder="Enter WordPress URL" style="max-width: 400px">
                     </div>
-                    <br>
-                    <div class="form-group">
-                        <label for="wp_user">WordPress Username:</label>
-                        <input type="text" name="wp_user" id="wp_user" class="form-control" style="max-width:400px" placeholder="WordPress Username" required>
-                    </div>
-                    <br>
-                    <div class="form-group">
-                        <label for="wp_app_password">Application Password:</label>
-                        <input type="password" name="wp_app_password" id="wp_app_password" class="form-control" style="max-width:400px" placeholder="Application Password" required>
-                    </div>
-                    <br>
-                    <button type="submit" name="connect_wp" class="btn btn-dark">Connect to WordPress</button>
+                    <button type="submit" class="btn btn-dark mt-1">Grant Access</button>
                 </form>
 
 
                     <h4 class="mt-4">Publish your template on WordPress!</h4>
 
-                <form method="post" class="mt-4">
-                    <div class="form-group">
-                        <label for="publishType">Publish as:</label>
-                        <select name="publish_type" id="publishType" class="form-control" style="max-width:400px !important">
-                            <option value="posts">Post</option>
-                            <option value="pages">Page</option>
-                        </select>
-                    
+                    <div class="tab-pane fade show active" id="publish" role="tabpanel" aria-labelledby="publish-tab">
+                        <form action="{{ url_for('edit_template', template_id=template_id) }}" method="post" class="p-1">
+                            <div class="form-group">
+                                <label for="publish_type" class="mb-1">Publish content as:</label>
+                                <select class="form-control" id="publish_type" name="publish_type" style="max-width: 400px">
+                                    <option value="posts">Post</option>
+                                    <option value="pages">Page</option>
+                                </select>
+                            </div>
+                            <div class="form-group mt-3">
+                                <label for="wp_status" class="mb-1">Publish with status:</label>
+                                <select class="form-control" id="wp_status" name="wp_status" style="max-width: 400px">
+                                    <option value="publish">Publish</option>
+                                    <option value="draft">Draft</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="private">Private</option>
+                                </select>
+                            </div>
+                            <button type="submit" name="publish_wp" class="btn btn-dark mt-2">Publish</button>
+                        </form>
                     </div>
-                    <button type="submit" name="publish_wp" class="btn btn-dark mt-4">Publish to WordPress</button>
-                </form>
+                </div>
 
                   </div>
                 </div>
@@ -144,179 +175,251 @@
         </div>
     </div>
 </div>
-
-<script src="https://cdn.ckeditor.com/4.16.0/full/ckeditor.js"></script>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
-    $(document).ready(function(){
-        // Function to update CKEditor variable list
-        function updateCKEditorVariableList(variables) {
-            var richCombo = CKEDITOR.instances.template_content.ui.get('InsertVariable');
-            richCombo.startGroup( "Variables" );  // This is important to initiate the group
-            var panel = richCombo._.panel._.iframe.$.contentWindow.richCombo;
-            
-            // Clear the panel
-            while (panel.firstChild) {
-                panel.removeChild(panel.firstChild);
+    $(document).ready(function() {
+        var toolbarOptions = [
+            ['bold', 'italic'],
+            ['link', 'blockquote', 'code-block', 'image'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            [{ 'align': [] }]
+        ];
+
+        var quill = new Quill('#template_content', {
+            theme: 'snow',
+            modules: {
+                toolbar: toolbarOptions
             }
+        });
+
+        var toolbar = quill.getModule('toolbar');
+
+        quill.clipboard.dangerouslyPasteHTML(`{{ template_content|safe }}`);
+
+        var variableDropdown = document.createElement('select');
+        variableDropdown.className = 'variable-dropdown btn btn-success';
+        variableDropdown.style.width = '120px'; // Set the width to 175px
+        variableDropdown.style.marginRight = '15px';  // Add right margin
+        variableDropdown.style.textAlignLast = 'left'; // Align text to the left
+        variableDropdown.innerHTML = '<option disabled selected style="background-color: white; color: black; text-align: left;">+Variable</option>';
+        {% for variable in variables %}
+            variableDropdown.innerHTML += `<option value="{{ variable }}" style="background-color: white; color: black; text-align: left;">{{ variable }}</option>`;
+        {% endfor %}
+
+        if (variableDropdown && toolbar) {
+            variableDropdown.addEventListener('change', function() {
+                let selectedVariable = this.value.trim(); // Trim the variable
+                selectedVariable = '[' + selectedVariable + ']'; // Add square brackets explicitly
+        
+                // Focus the Quill editor before getting the selection
+                quill.focus();
+        
+                let selection = quill.getSelection();
+                
+                // Check if selection exists
+                if (selection) {
+                    let cursorPosition = selection.index;
             
-            // Add new items
-            for (var i = 0; i < variables.length; i++) {
-                richCombo.add(variables[i], variables[i], variables[i]);
-            }
+                    // Insert the variable
+                    quill.insertText(cursorPosition, selectedVariable);
+            
+                    // Move the cursor to the end of the inserted variable
+                    quill.setSelection(cursorPosition + selectedVariable.length);
+                }
+                
+                this.selectedIndex = 0;  // Reset dropdown to default state
+            });
+        
+            toolbar.container.prepend(variableDropdown);
         }
 
-        // Initialize CKEditor
-        CKEDITOR.replace('template_content', {
-            removePlugins: 'exportpdf',
-            extraPlugins: 'insertVariable',
-            toolbar: [
-                ['InsertVariable'],
-                ['Bold', 'Italic', 'Underline', 'Strike'],
-                ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
-                ['Font', 'FontSize', 'TextColor', 'BGColor'],
-                ['Undo', 'Redo']
-            ]
+
+
+
+        var $dropdown = $('#title_variable_dropdown');
+        {% for variable in variables %}
+            $dropdown.append(new Option("{{ variable }}", "{{ variable }}"));
+        {% endfor %}
+
+        $('#title_variable_dropdown').change(function() {
+            let selectedVariable = $(this).val().trim();  // Trim the selected variable
+            let currentTitle = $('#template_name').val();
+            $('#template_name').val(currentTitle + '[' + selectedVariable + ']');  // Add square brackets explicitly
+            $(this).prop('selectedIndex', 0);
         });
 
-        // Custom CKEditor Plugin for inserting variables
-        CKEDITOR.plugins.add('insertVariable', {
-            init: function(editor) {
-                editor.ui.addRichCombo('InsertVariable', {
-                    className: 'cke_button__insertvariable_label',
-                    label: '+ Variable',
-                    title: '+ Add variable',
-                    toolbar: 'insert',
-                    panel: {
-                        css: [ CKEDITOR.skin.getPath('editor') ].concat(editor.config.contentsCss),
-                        multiSelect: false,
-                        attributes: { 'aria-label': 'Variables' }
-                    },
-                    init: function() {
-                        var variables = {{ variables|tojson }};
-                        for(var i = 0; i < variables.length; i++) {
-                            this.add(variables[i], variables[i], variables[i]);
-                        }
-                    },
-                    onClick: function(value) {
-                        editor.insertText(value);
-                    }
-                });
-            }
-        });
-
-        // AJAX call to add a variable
-
-
-      // Function to reload CKEditor with new variables
-      function reloadCKEditorWithVariables(variables) {
-          if (CKEDITOR.instances.template_content) {
-              CKEDITOR.instances.template_content.destroy(true);
-          }
-      
-          CKEDITOR.replace('template_content', {
-              removePlugins: 'exportpdf',
-              extraPlugins: 'insertVariable',
-              toolbar: [
-                  ['InsertVariable'],
-                  ['Bold', 'Italic', 'Underline', 'Strike'],
-                  ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent'],
-                  ['Font', 'FontSize', 'TextColor', 'BGColor'],
-                  ['Undo', 'Redo']
-              ]
-          });
-      
-          CKEDITOR.on('instanceReady', function(ev) {
-              var editor = ev.editor;
-              editor.ui.addRichCombo('InsertVariable', {
-                  className: 'cke_button__insertvariable_label',
-                  label: '+ Variable',
-                  title: '+ Add variable',
-                  toolbar: 'insert',
-                  panel: {
-                      css: [ CKEDITOR.skin.getPath('editor') ].concat(editor.config.contentsCss),
-                      multiSelect: false,
-                      attributes: { 'aria-label': 'Variables' }
-                  },
-                  init: function() {
-                      for (var i = 0; i < variables.length; i++) {
-                          this.add(variables[i], variables[i], variables[i]);
-                      }
-                  },
-                  onClick: function(value) {
-                      editor.insertText(value);
-                  }
-              });
-          });
-      }
-
-        // Your existing AJAX code for deleting a variable
         $(document).on('click', '.delete-variable', function() {
-            let variableToDelete = $(this).data('variable');
-            var templateID = $("#template_id").val();
-        
+            let variableToDelete = $(this).attr('data-variable');
+            let templateID = $("#template_id").val();
             $.ajax({
                 url: '/delete_variable',
                 type: 'POST',
                 data: { variable_name: variableToDelete, template_id: templateID },
                 success: function(response) {
                     if (response.status === 'success') {
-                        $('span.variable-button:contains(' + variableToDelete + ')').remove();
-                        var currentVariables = {{ variables|tojson }};
-                        var index = currentVariables.indexOf(variableToDelete);
-                        if (index > -1) {
-                            currentVariables.splice(index, 1);
-                        }
-                        reloadCKEditorWithVariables(currentVariables);
+                        // Remove the variable from the DOM
+                        $(`.delete-variable[data-variable='${variableToDelete}']`).parent().remove();
+                        
+                        // Success flash message for deletion
+                        let flashMessage = $('<div>').addClass('alert alert-success').text('Variable deleted successfully.');
+                        $('#flash-messages').append(flashMessage);
                     } else {
-                        console.error("Failed to delete variable:", response.message);
+                        // Error flash message
+                        let flashMessage = $('<div>').addClass('alert alert-danger').text('Failed to delete variable.');
+                        $('#flash-messages').append(flashMessage);
                     }
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
-                    console.error("AJAX Error:", textStatus, errorThrown);
+                    if (jqXHR.status === 400) {
+                        let response = JSON.parse(jqXHR.responseText);
+                        let flashMessage = $('<div>').addClass('alert alert-warning').text(response.message);
+                        $('#flash-messages').append(flashMessage);
+                    } else {
+                        let flashMessage = $('<div>').addClass('alert alert-danger').text('An error occurred while trying to add the variable.');
+                        $('#flash-messages').append(flashMessage);
+                    }
                 }
             });
         });
 
 
-        // Local storage for tab persistence
         let activeTab = localStorage.getItem('activeTab');
-        if(activeTab){
+        if (activeTab) {
             $('.nav-tabs a[href="' + activeTab + '"]').tab('show');
         }
-
-        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
             localStorage.setItem('activeTab', $(e.target).attr('href'));
         });
-    });
 
-
-
-
-      function verifyWPConnection() {
-        fetch('/verify_wp_connection')
-        .then(response => response.json())
-        .then(data => {
-            let button = document.getElementById('connectionStatus');
-            if (data.status === 'connected') {
-                button.className = 'btn btn-success';
-            } else if (data.status === 'no_credentials') {
-                button.className = 'btn btn-warning';
-            } else {
-                button.className = 'btn btn-danger';
-            }
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
-    }
-
-    $('#editTemplateTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-        if (e.target.getAttribute('aria-controls') === 'publish') {
-            verifyWPConnection();
+        function verifyWPConnection() {
+            fetch('/verify_wp_connection')
+            .then(response => response.json())
+            .then(data => {
+                let button = document.getElementById('connectionStatus');
+                if (button !== null) {
+                    if (data.status === 'connected') {
+                        button.className = 'btn btn-success';
+                    } else if (data.status === 'no_credentials') {
+                        button.className = 'btn btn-warning';
+                    } else {
+                        button.className = 'btn btn-danger';
+                    }
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
         }
+
+
+        $('#editTemplateTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            if (e.target.getAttribute('aria-controls') === 'publish') {
+                verifyWPConnection();
+            }
+        });
+
+
+
+        $('#update_template_form').on('submit', function() {
+            var quillHtml = quill.root.innerHTML;
+            console.log("Quill HTML before form submit:", quillHtml);
+            $('#hidden_template_content').val(quillHtml);
+            console.log("hidden_template_content after form submit:", $('#hidden_template_content').val());
+        });
+
+
+      
+        // Add this code for adding variables via AJAX
+        $('#add_variable_button').click(function(event) {
+            event.preventDefault(); // Prevent the form from submitting normally
+            let variableToAdd = $('#variable_name').val().trim().replace(/ +/g, '_'); // Trim and replace only spaces between words with underscores
+            let templateID = $("#template_id").val();
+      
+            // Validate variable name for special characters
+            let regex = /^[a-zA-Z0-9_]+$/;
+            if (!regex.test(variableToAdd)) {
+                let flashMessage = $('<div>').addClass('alert alert-warning').text('Special characters or empty variables are not allowed. You can use underscores to_separate_words.');
+                $('#flash-messages').append(flashMessage);
+                return false; // Prevent form submission
+            }
+            
+            $.ajax({
+                url: '/add_variable',
+                type: 'POST',
+                data: { variable_name: variableToAdd, template_id: templateID },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        // Code for adding variable and clearing input
+                        let newVariableSpan = $('<span>').addClass('variable-button btn btn-warning').text(`[${variableToAdd}]`);
+                        let newDeleteButton = $('<button>').attr('type', 'button').addClass('btn text-danger btn-sm delete-variable').attr('data-variable', variableToAdd).text('X');
+                        newVariableSpan.append(newDeleteButton);
+                        $('#container_for_existing_variables').append(newVariableSpan);
+                        $('#variable_name').val('');
+                        
+                        // Success flash message
+                        let flashMessage = $('<div>').addClass('alert alert-success').text('Variable added successfully.');
+                        $('#flash-messages').append(flashMessage);
+                    } else if (response.status === 'duplicate') {
+                        let flashMessage = $('<div>').addClass('alert alert-warning').text('This variable already exists.');
+                        $('#flash-messages').append(flashMessage);
+                    } else {
+                        // Error flash message
+                        let flashMessage = $('<div>').addClass('alert alert-danger').text('Failed to add variable.');
+                        $('#flash-messages').append(flashMessage);
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    if (jqXHR.status === 400) {
+                        let response = JSON.parse(jqXHR.responseText);
+                        let flashMessage = $('<div>').addClass('alert alert-warning').text(response.message);
+                        $('#flash-messages').append(flashMessage);
+                    } else {
+                        let flashMessage = $('<div>').addClass('alert alert-danger').text('An unexpected error occurred.');
+                        $('#flash-messages').append(flashMessage);
+                    }
+                }
+            });
+        });
+      
+        // Listen for the 'keypress' event on the input field
+        $('#variable_name').keypress(function(event) {
+            if (event.which === 13) { // 13 is the keyCode for the Enter key
+                event.preventDefault(); // Prevent default form submission
+                $('#add_variable_button').click(); // Programmatically click the "Add Variable" button
+            }
+        });
+
+      // Clear and repopulate the dropdowns when switching tabs
+      $('#editTemplateTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+          if (e.target.getAttribute('aria-controls') === 'template') {
+              // Clear and repopulate the dropdowns
+              $('#title_variable_dropdown').find('option:not(:first)').remove();
+              $(variableDropdown).find('option:not(:first)').remove();
+              $('#container_for_existing_variables .variable-button').each(function() {
+                  let variableName = $(this).text().replace('X', '').replace(/[\[\]]/g, '');  // Remove the 'X' and brackets from the span text
+                  // Explicitly include square brackets
+                  let newOption = new Option("[" + variableName + "]", variableName);
+                  $('#title_variable_dropdown').append($(newOption).clone());  // For title
+                  $(variableDropdown).append(newOption.cloneNode(true));  // For Quill toolbar
+              });
+          }
+      });
+
+      
+      if (document.getElementById("grantAccess")) {
+          document.getElementById("grantAccess").addEventListener("click", function(){
+              const wpUrl = document.getElementById("wpUrl").value;
+              if (wpUrl) {
+                  window.location.href = `/grant_access?wp_url=${encodeURIComponent(wpUrl)}`;
+              } else {
+                  alert("Please enter a WordPress URL.");
+              }
+          });
+      }
+   
     });
 </script>
 {% endblock %}

@@ -5,7 +5,7 @@
     <hr>
     <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item">
-            <a href="/new_template" onclick="setDefaultTab();" class="nav-link text-white">
+            <a href="{{ url_for('reset_draft') }}?reset_tab=true" onclick="setDefaultTab();" class="nav-link text-white">
                 <i class="fas fa-plus"></i>
                 <span class="ms-2">Add New Template</span>
             </a>
@@ -13,7 +13,7 @@
         <li class="nav-item">
             <a href="/saved_templates" class="nav-link text-white">
                 <i class="fas fa-edit"></i>
-                <span class="ms-2">Saved Templates</span>
+                <span class="ms-2">Edit Templates</span>
             </a>
         </li>
         <!-- Add more links as needed -->
