@@ -1,43 +1,58 @@
-from sqlalchemy import create_engine, text, Column, Integer, String, Text, ForeignKey, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from supabase import create_client, Client
 import os
 
-db_connection_string = os.environ['db_connection_string']
-print(f"Database connection string: {db_connection_string}")  # Debugging line to print the connection string
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(url, key)
 
-engine = create_engine(
-    db_connection_string,
-    connect_args={
-        "ssl": {
-            "ssl_ca": "/etc/ssl/cert.pem"
-        }
-    }
-)
+class Template:
+    def __init__(self, id, template_name, template_content, template_variables, draft, user_id, active_tab):
+        self.id = id
+        self.template_name = template_name
+        self.template_content = template_content
+        self.template_variables = template_variables
+        self.draft = draft
+        self.user_id = user_id
+        self.active_tab = active_tab
 
-Session = sessionmaker(bind=engine)
-session = Session()
+class UserDB:
+    def __init__(self, id, username, password, wp_url, wp_user, wp_app_password, connection_status):
+        self.id = id
+        self.username = username
+        self.password = password
+        self.wp_url = wp_url
+        self.wp_user = wp_user
+        self.wp_app_password = wp_app_password
+        self.connection_status = connection_status
 
-Base = declarative_base()
+def get_templates():
+    response = supabase.table('templates').select('*').execute()
+    return [Template(**template) for template in response.data]
 
-class Template(Base):
-    __tablename__ = 'templates'
-    
-    id = Column(Integer, primary_key=True)
-    template_name = Column(String(200), nullable=False)
-    template_content = Column(Text, nullable=False)
-    template_variables = Column(Text, nullable=True)
-    draft = Column(Boolean, default=True)
-    user_id = Column(String(50), nullable=False)
-    active_tab = Column(String(50), nullable=True)
+def get_users():
+    response = supabase.table('users').select('*').execute()
+    return [UserDB(**user) for user in response.data]
 
-class UserDB(Base):
-    __tablename__ = 'users'
+def add_template(template):
+    response = supabase.table('templates').insert(template.__dict__).execute()
+    return response
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String(50))
-    password = Column(String(50))
-    wp_url = Column(String(200))
-    wp_user = Column(String(50))
-    wp_app_password = Column(String(50))
-    connection_status = Column(String, default="not_connected")
+def add_user(user):
+    response = supabase.table('users').insert(user.__dict__).execute()
+    return response
+
+def update_template(template_id, updates):
+    response = supabase.table('templates').update(updates).eq('id', template_id).execute()
+    return response
+
+def update_user(user_id, updates):
+    response = supabase.table('users').update(updates).eq('id', user_id).execute()
+    return response
+
+def delete_template(template_id):
+    response = supabase.table('templates').delete().eq('id', template_id).execute()
+    return response
+
+def delete_user(user_id):
+    response = supabase.table('users').delete().eq('id', user_id).execute()
+    return response
