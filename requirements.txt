@@ -3,4 +3,4 @@ Flask-Login
 Flask-SQLAlchemy
 pymysql
 gunicorn
-requestssupabase
+requestssupabasepython-dotenv
