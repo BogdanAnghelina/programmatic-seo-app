@@ -1,6 +1,6 @@
 from flask import Flask, render_template
 from flask_login import LoginManager
-from auth import auth_bp, login_manager
+from auth import auth_bp
 from template_routes import template_bp
 from wordpress import wordpress_bp
 from helpers import initialize_app
