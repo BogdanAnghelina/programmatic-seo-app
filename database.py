@@ -1,8 +1,8 @@
 from supabase import create_client, Client
 import os
 
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
+url: str = "https://ogwekmdhhbuiekbpndsv.supabase.co"
+key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nd2VrbWRoaGJ1aWVrYnBuZHN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTE3NDE2MjgsImV4cCI6MjAyNzMxNzYyOH0.LdZE4bQU1s0pLG-tuKP4--uZpjX9sg5AXhDnkmJG_ck"
 supabase: Client = create_client(url, key)
 
 class Template:
