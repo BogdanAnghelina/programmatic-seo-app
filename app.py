@@ -28,3 +28,16 @@ if __name__ == "__main__":
     app.run(debug=True)
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
+
+# Register Blueprints
+app.register_blueprint(auth_bp)
+app.register_blueprint(template_bp)
+app.register_blueprint(wordpress_bp)
+
+# Initialize helpers
+initialize_app(app)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'

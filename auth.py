@@ -24,7 +24,7 @@ def login():
                 session.add(UserDB(username='admin', password='password'))
                 session.commit()
             login_user(FlaskUser(user_id='admin'))
-            return redirect(url_for('template.new_template'))
+            return redirect(url_for('template_bp.new_template'))
         flash('Invalid credentials.')
     return render_template('login.html')
 
