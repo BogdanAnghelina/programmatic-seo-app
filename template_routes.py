@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 from database import Template, session
 from helpers import format_variable
 
-template_bp = Blueprint('template', __name__)
+template_bp = Blueprint('template_bp', __name__)
 
 @template_bp.route('/new_template', methods=['GET', 'POST'])
 @login_required
