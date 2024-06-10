@@ -3,4 +3,6 @@ Flask-Login
 Flask-SQLAlchemy
 pymysql
 gunicorn
-requestssupabasepython-dotenv
+requests
+supabase
+python-dotenv
