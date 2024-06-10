@@ -1,7 +1,7 @@
 # 1. Import statements
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import current_user, LoginManager, UserMixin, login_user, login_required, logout_user
-from database import Template, Session, session, UserDB
+from database import Template, session, UserDB
 from urllib.parse import urlencode
 import requests
 import base64
@@ -352,7 +352,7 @@ def update_template():
 def check_variable_in_draft():
     variable_name = request.form.get('variable_name')
     # Assuming user_id and draft are available (user_id should be taken from the session after login)
-    user_id = session.get('user_id')
+    user_id = current_user.id
     
     existing_draft = db.session.query(Template).filter_by(user_id=user_id, draft=1).first()
 
@@ -568,6 +568,7 @@ def extract_variables():
 
     return render_template('extract_variables.html')
 
+@app.teardown_appcontext
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     if exception:
