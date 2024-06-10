@@ -1,6 +1,8 @@
+import base64
+import requests
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import current_user, login_required
-from database import Template, session
+from database import Template, session, UserDB
 from helpers import format_variable
 
 template_bp = Blueprint('template_bp', __name__)
