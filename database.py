@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker, relationship
 import os
 
 db_connection_string = os.environ['db_connection_string']
+print(f"Database connection string: {db_connection_string}")  # Debugging line to print the connection string
 
 engine = create_engine(
     db_connection_string,
