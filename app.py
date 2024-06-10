@@ -1,6 +1,11 @@
 from flask import Flask, render_template
 from flask_login import LoginManager
 from auth import auth_bp
+from flask_login import LoginManager
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
 from template_routes import template_bp
 from wordpress import wordpress_bp
 from helpers import initialize_app
