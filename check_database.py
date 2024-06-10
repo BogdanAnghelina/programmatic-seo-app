@@ -1,5 +1,3 @@
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 from database import Template, session
 
 # Query all templates
