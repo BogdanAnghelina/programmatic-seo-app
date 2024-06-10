@@ -15,5 +15,16 @@ SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 login_manager.login_view = 'auth.login'
+
+# Register Blueprints
+app.register_blueprint(auth_bp)
+app.register_blueprint(template_bp)
+app.register_blueprint(wordpress_bp)
+
+# Initialize helpers
+initialize_app(app)
+
+if __name__ == "__main__":
+    app.run(debug=True)
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
