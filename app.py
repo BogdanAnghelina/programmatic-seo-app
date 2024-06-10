@@ -3,9 +3,6 @@ from flask_login import LoginManager
 from auth import auth_bp
 from flask_login import LoginManager
 
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'auth.login'
 from template_routes import template_bp
 from wordpress import wordpress_bp
 from helpers import initialize_app
@@ -21,14 +18,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
 
-initialize_app(app)
-app.register_blueprint(auth_bp)
-app.register_blueprint(template_bp)
-app.register_blueprint(wordpress_bp)
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
