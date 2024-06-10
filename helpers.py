@@ -2,6 +2,8 @@ import re
 from flask import Flask
 from database import session
 
+from app import app
+
 def format_variable(variable):
     return f"[{variable.lower().replace(' ', '_')}]" if re.match(r'^[a-zA-Z0-9_ ]*$', variable) else ''
 
