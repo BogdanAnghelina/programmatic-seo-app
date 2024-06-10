@@ -354,7 +354,7 @@ def check_variable_in_draft():
     # Assuming user_id and draft are available (user_id should be taken from the session after login)
     user_id = current_user.id
     
-    existing_draft = db.session.query(Template).filter_by(user_id=user_id, draft=1).first()
+    existing_draft = session.query(Template).filter_by(user_id=user_id, draft=1).first()
 
     if existing_draft:
         existing_variables = existing_draft.template_variables.split(",") if existing_draft.template_variables else []
