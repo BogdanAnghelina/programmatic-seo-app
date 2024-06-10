@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_user, login_required, logout_user
 from database import session, UserDB
-from app import login_manager
+from login_manager import login_manager
 from flask_login import UserMixin
 
 auth_bp = Blueprint('auth', __name__)
